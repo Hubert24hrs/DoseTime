@@ -1,0 +1,61 @@
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+
+class DatabaseHelper {
+  static final DatabaseHelper instance = DatabaseHelper._init();
+  static Database? _database;
+
+  DatabaseHelper._init();
+
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDB('dose_time.db');
+    return _database!;
+  }
+
+  Future<Database> _initDB(String filePath) async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, filePath);
+
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: _createDB,
+    );
+  }
+
+  Future _createDB(Database db, int version) async {
+    const idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
+    const textType = 'TEXT NOT NULL';
+    const intType = 'INTEGER NOT NULL';
+    const intNullable = 'INTEGER';
+
+    await db.execute('''
+    CREATE TABLE medications (
+      id $idType,
+      name $textType,
+      dosage $textType,
+      frequency $textType,
+      times $textType,
+      color $intType,
+      icon $intNullable
+    )
+    ''');
+
+    await db.execute('''
+    CREATE TABLE dose_logs (
+      id $idType,
+      medication_id $intType,
+      scheduled_time $textType,
+      taken_time $textType, -- Nullable in logic, but passing string null needs care
+      status $textType,
+      FOREIGN KEY (medication_id) REFERENCES medications (id) ON DELETE CASCADE
+    )
+    ''');
+  }
+
+  Future<void> close() async {
+    final db = await instance.database;
+    db.close();
+  }
+}
