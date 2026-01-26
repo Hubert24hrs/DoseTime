@@ -17,7 +17,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   final _dosageController = TextEditingController();
   
   String _frequency = 'Daily';
-  List<TimeOfDay> _times = [const TimeOfDay(hour: 8, minute: 0)];
+  final List<TimeOfDay> _times = [const TimeOfDay(hour: 8, minute: 0)];
   Color _selectedColor = AppConstants.medicationColors.first;
   IconData _selectedIcon = AppConstants.medicationIcons.first;
 
@@ -47,7 +47,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
         dosage: _dosageController.text,
         frequency: _frequency,
         times: _times,
-        color: _selectedColor.value,
+        color: _selectedColor.toARGB32(),
         icon: _selectedIcon,
       );
 
@@ -102,13 +102,21 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                     const SizedBox(height: 24),
                     const Text('Frequency', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: _frequency,
-                      decoration: const InputDecoration(border: OutlineInputBorder()),
-                      items: ['Daily', 'As Needed']
-                          .map((f) => DropdownMenuItem(value: f, child: Text(f)))
-                          .toList(),
-                      onChanged: (val) => setState(() => _frequency = val!),
+                    InputDecorator(
+                      decoration:
+                          const InputDecoration(border: OutlineInputBorder()),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _frequency,
+                          isDense: true,
+                          isExpanded: true,
+                          items: ['Daily', 'As Needed']
+                              .map((f) =>
+                                  DropdownMenuItem(value: f, child: Text(f)))
+                              .toList(),
+                          onChanged: (val) => setState(() => _frequency = val!),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Row(
@@ -150,7 +158,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                     const SizedBox(height: 24),
                     const Text('Appearance', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),

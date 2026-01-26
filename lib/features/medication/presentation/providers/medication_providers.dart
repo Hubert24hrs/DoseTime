@@ -80,8 +80,6 @@ final todaysScheduleProvider = FutureProvider.autoDispose<List<DoseScheduleItem>
         // But simpler: Check if we have a log for this med that loosely matches this time?
         // Let's refine Log logic: log.scheduledTime should be today at HH:MM
         
-        final scheduledDateTime = DateTime(today.year, today.month, today.day, hour, minute);
-
         final log = logs.firstWhere(
           (l) => l.medicationId == med.id && 
                  l.scheduledTime.hour == hour && 
