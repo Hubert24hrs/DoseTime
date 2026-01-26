@@ -13,10 +13,11 @@ class AddMedicationState {
   AddMedicationState({this.isLoading = false, this.error});
 }
 
-class AddMedicationController extends StateNotifier<AddMedicationState> {
-  final Ref ref;
-
-  AddMedicationController(this.ref) : super(AddMedicationState());
+class AddMedicationController extends Notifier<AddMedicationState> {
+  @override
+  AddMedicationState build() {
+    return AddMedicationState();
+  }
 
   Future<bool> saveMedication({
     required String name,
@@ -80,6 +81,5 @@ class AddMedicationController extends StateNotifier<AddMedicationState> {
 }
 
 final addMedicationControllerProvider =
-    StateNotifierProvider.autoDispose<AddMedicationController, AddMedicationState>((ref) {
-  return AddMedicationController(ref);
-});
+    NotifierProvider.autoDispose<AddMedicationController, AddMedicationState>(
+        AddMedicationController.new);

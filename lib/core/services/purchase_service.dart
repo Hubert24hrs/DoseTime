@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -11,6 +13,7 @@ class PurchaseService {
   static const String _proEntitlementId = 'pro';
 
   bool _isInitialized = false;
+  final StreamController<CustomerInfo> _customerInfoController = StreamController<CustomerInfo>.broadcast();
 
   /// Initialize RevenueCat SDK
   Future<void> initialize() async {
@@ -31,6 +34,9 @@ class PurchaseService {
       }
       
       await Purchases.configure(configuration);
+      Purchases.addCustomerInfoUpdateListener((info) {
+        _customerInfoController.add(info);
+      });
       _isInitialized = true;
       debugPrint('PurchaseService: Initialized successfully');
     } catch (e) {
@@ -98,7 +104,7 @@ class PurchaseService {
 
   /// Listen to customer info changes
   Stream<CustomerInfo> get customerInfoStream {
-    return Purchases.customerInfoStream;
+    return _customerInfoController.stream;
   }
 }
 
