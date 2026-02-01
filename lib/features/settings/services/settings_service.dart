@@ -8,6 +8,7 @@ class SettingsService {
 
   static const _keyDisclaimer = 'disclaimer_accepted';
   static const _keyPro = 'is_pro';
+  static const _keyOnboarding = 'onboarding_complete';
 
   bool get disclaimerAccepted => prefs.getBool(_keyDisclaimer) ?? false;
   Future<void> setDisclaimerAccepted(bool value) async {
@@ -17,6 +18,11 @@ class SettingsService {
   bool get isPro => prefs.getBool(_keyPro) ?? false;
   Future<void> setPro(bool value) async {
     await prefs.setBool(_keyPro, value);
+  }
+
+  bool get onboardingComplete => prefs.getBool(_keyOnboarding) ?? false;
+  Future<void> setOnboardingComplete(bool value) async {
+    await prefs.setBool(_keyOnboarding, value);
   }
 }
 

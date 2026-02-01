@@ -41,10 +41,35 @@ dependencies:
   flutter_local_notifications: ^19.5.0
   intl: ^0.20.2
   google_fonts: ^6.3.2
-  animate_do: ^4.2.0
+  animate_do: ^3.3.4
   timezone: ^0.10.1
   shared_preferences: ^2.5.3
   purchases_flutter: ^8.3.0
+  
+  # Security & Storage
+  flutter_secure_storage: ^9.2.2
+  encrypt: ^5.0.3
+  
+  # Firebase (Analytics & Crashlytics)
+  firebase_core: ^3.8.1
+  firebase_analytics: ^11.4.1
+  firebase_crashlytics: ^4.3.1
+  
+  # Charts & PDF Export
+  fl_chart: ^0.70.2
+  pdf: ^3.11.3
+  path_provider: ^2.1.5
+  share_plus: ^10.1.4
+  
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+  
+  # Permissions
+  permission_handler: ^11.3.1
+  
+  # URL launcher for email links
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:

@@ -1,0 +1,80 @@
+{
+  "@@locale": "en",
+  "appName": "DoseTime",
+  "@appName": {
+    "description": "The name of the application"
+  },
+  "home": "Home",
+  "medications": "Medications",
+  "history": "History",
+  "settings": "Settings",
+  "addMedication": "Add Medication",
+  "editMedication": "Edit Medication",
+  "medicationName": "Medication Name",
+  "dosage": "Dosage",
+  "frequency": "Frequency",
+  "times": "Reminder Times",
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "take": "Take",
+  "skip": "Skip",
+  "taken": "Taken",
+  "skipped": "Skipped",
+  "missed": "Missed",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "noMedications": "No medications yet",
+  "noMedicationsDesc": "Tap the + button to add your first medication",
+  "noHistory": "No history yet",
+  "noHistoryDesc": "Your dose logs will appear here",
+  "dailyReminder": "Daily Reminder",
+  "timeToTake": "Time to take {medication}",
+  "@timeToTake": {
+    "placeholders": {
+      "medication": {
+        "type": "String"
+      }
+    }
+  },
+  "dosageInfo": "{dosage}",
+  "@dosageInfo": {
+    "placeholders": {
+      "dosage": {
+        "type": "String"
+      }
+    }
+  },
+  "adherenceRate": "Adherence Rate",
+  "streak": "Current Streak",
+  "days": "{count, plural, =1{1 day} other{{count} days}}",
+  "@days": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "excellent": "Excellent!",
+  "good": "Good",
+  "needsImprovement": "Needs improvement",
+  "low": "Low adherence",
+  "permissionsRequired": "Permissions Required",
+  "permissionsRationale": "DoseTime needs notification permissions to remind you about your medications. Exact alarm permission ensures reminders are delivered on time, even in battery-saving mode.",
+  "grantPermissions": "Grant Permissions",
+  "maybeLater": "Maybe Later",
+  "disclaimer": "Medical Disclaimer",
+  "disclaimerText": "DoseTime is a reminder tool only and is NOT a substitute for professional medical advice. Always consult your healthcare provider.",
+  "accept": "I Understand",
+  "upgradeToPro": "Upgrade to Pro",
+  "proFeatures": "Unlock unlimited medications, adherence insights, and PDF exports.",
+  "purchase": "Purchase",
+  "restore": "Restore Purchase",
+  "exportData": "Export Data",
+  "deleteAllData": "Delete All Data",
+  "deleteConfirm": "Are you sure you want to delete all your data? This cannot be undone.",
+  "privacyPolicy": "Privacy Policy",
+  "termsOfService": "Terms of Service",
+  "version": "Version",
+  "about": "About DoseTime"
+}

@@ -1,16 +1,21 @@
 import 'package:dose_time/core/router/app_router.dart';
+import 'package:dose_time/core/services/analytics_service.dart';
 import 'package:dose_time/core/services/purchase_service.dart';
+import 'package:dose_time/core/services/secure_storage_service.dart';
 import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService().initialize();
-  await PurchaseService().initialize();
+  
+  // Initialize core services
+  await _initializeServices();
+  
   final prefs = await SharedPreferences.getInstance();
   
   runApp(ProviderScope(
@@ -19,6 +24,21 @@ void main() async {
     ],
     child: const DoseTimeApp(),
   ));
+}
+
+/// Initialize all core services
+Future<void> _initializeServices() async {
+  // Initialize Firebase Analytics & Crashlytics
+  await AnalyticsService().initialize();
+  
+  // Initialize notifications
+  await NotificationService().initialize();
+  
+  // Initialize secure storage
+  await SecureStorageService().initialize();
+  
+  // Initialize in-app purchases (mock mode for now)
+  await PurchaseService().initialize();
 }
 
 class DoseTimeApp extends ConsumerWidget {
@@ -31,10 +51,30 @@ class DoseTimeApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'DoseTime',
       debugShowCheckedModeBanner: false,
+      
+      // Theme
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
+      
+      // Router
       routerConfig: router,
+      
+      // Localization
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'), // English
+        Locale('es'), // Spanish
+      ],
+      
+      // Analytics observer
+      builder: (context, child) {
+        return child ?? const SizedBox();
+      },
     );
   }
 }

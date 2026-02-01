@@ -2,6 +2,7 @@ import 'package:dose_time/core/widgets/scaffold_with_navbar.dart';
 import 'package:dose_time/features/medication/presentation/screens/add_medication_screen.dart';
 import 'package:dose_time/features/medication/presentation/screens/medication_list_screen.dart';
 import 'package:dose_time/features/medication/presentation/screens/home_screen.dart';
+import 'package:dose_time/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:dose_time/features/settings/presentation/screens/disclaimer_screen.dart';
 import 'package:dose_time/features/settings/presentation/screens/pro_upgrade_screen.dart';
 import 'package:dose_time/features/settings/presentation/screens/settings_screen.dart';
@@ -20,15 +21,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/home',
     redirect: (context, state) {
-      if (!settings.disclaimerAccepted) {
+      // Check onboarding first
+      if (!settings.onboardingComplete && state.matchedLocation != '/onboarding') {
+        return '/onboarding';
+      }
+      // Then check disclaimer
+      if (!settings.disclaimerAccepted && state.matchedLocation != '/disclaimer' && state.matchedLocation != '/onboarding') {
         return '/disclaimer';
       }
       return null;
     },
     routes: [
-       GoRoute(
-        path: '/disclaimer',
-        builder: (context, state) => const DisclaimerScreen(),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
