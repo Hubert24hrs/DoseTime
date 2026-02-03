@@ -20,8 +20,6 @@ class PurchaseService {
     if (_isInitialized) return;
     
     try {
-      await Purchases.setLogLevel(LogLevel.debug);
-      
       PurchasesConfiguration configuration;
       if (defaultTargetPlatform == TargetPlatform.android) {
         configuration = PurchasesConfiguration(_apiKey);
@@ -32,6 +30,8 @@ class PurchaseService {
         debugPrint('PurchaseService: Platform not supported for purchases');
         return;
       }
+
+      await Purchases.setLogLevel(LogLevel.debug);
       
       await Purchases.configure(configuration);
       Purchases.addCustomerInfoUpdateListener((info) {
