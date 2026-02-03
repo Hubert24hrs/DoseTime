@@ -1,4 +1,5 @@
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -73,10 +74,14 @@ class MedicationListScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, int id) {
-    showDialog(
+  void _confirmDelete(BuildContext context, WidgetRef ref, int id) async {
+    await HapticFeedback.mediumImpact();
+    
+    if (!context.mounted) return;
+
+    showAdaptiveDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AlertDialog.adaptive(
         title: const Text('Delete Medication?'),
         content: const Text('This will delete the medication and its history.'),
         actions: [

@@ -1,4 +1,5 @@
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -134,7 +135,8 @@ class _DoseCard extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                           await HapticFeedback.lightImpact();
                            ref.read(logDoseProvider)(item, 'skipped');
                         },
                         child: const Text('Skip'),
@@ -147,7 +149,8 @@ class _DoseCard extends ConsumerWidget {
                           backgroundColor: color, 
                           foregroundColor: Colors.white
                         ),
-                        onPressed: () {
+                        onPressed: () async {
+                           await HapticFeedback.lightImpact();
                            ref.read(logDoseProvider)(item, 'taken');
                         },
                         child: const Text('Take'),

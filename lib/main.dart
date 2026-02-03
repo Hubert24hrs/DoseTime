@@ -73,6 +73,33 @@ class DoseTimeApp extends ConsumerWidget {
       
       // Analytics observer
       builder: (context, child) {
+        ErrorWidget.builder = (FlutterErrorDetails details) {
+          return Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.orange),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Oops! Something went wrong.',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      details.exception.toString(),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        };
         return child ?? const SizedBox();
       },
     );
