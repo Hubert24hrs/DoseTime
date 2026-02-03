@@ -1,5 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -14,6 +16,12 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB(String filePath) async {
+    if (kIsWeb) {
+      // Initialize FFI for web
+      databaseFactory = databaseFactoryFfiWeb;
+      return await openDatabase(filePath, version: 1, onCreate: _createDB);
+    }
+    
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
