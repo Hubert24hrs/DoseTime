@@ -49,7 +49,7 @@ class DoseTimeApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'DoseTime',
+      title: 'DoseAlert',
       debugShowCheckedModeBanner: false,
       
       // Theme

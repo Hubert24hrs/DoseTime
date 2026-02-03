@@ -1,6 +1,6 @@
 {
-    "name": "dose_time",
-    "short_name": "dose_time",
+    "name": "DoseAlert",
+    "short_name": "DoseAlert",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
