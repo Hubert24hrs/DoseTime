@@ -47,3 +47,7 @@ app.*.map.json
 # Android Secrets
 key.properties
 **/*.jks
+
+*.txt
+*.json
+*.bak

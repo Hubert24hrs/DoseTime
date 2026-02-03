@@ -73,7 +73,7 @@ class InputValidator {
   /// Check for common SQL injection patterns
   static bool _containsSqlInjectionPatterns(String input) {
     final patterns = [
-      RegExp(r"['\"];", caseSensitive: false),
+      RegExp("['\\\"];", caseSensitive: false),
       RegExp(r"--", caseSensitive: false),
       RegExp(r"/\*", caseSensitive: false),
       RegExp(r"\*/", caseSensitive: false),

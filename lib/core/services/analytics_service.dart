@@ -6,7 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'firebase_options.dart';
+import 'package:dose_time/firebase_options.dart';
 
 /// Service for Firebase Analytics and Crashlytics integration
 class AnalyticsService {

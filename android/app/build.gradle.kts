@@ -26,7 +26,7 @@ dependencies {
 android {
     namespace = "dev.hubert.dosetime"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "26.3.11579264"
 
     compileOptions {
         // Required for flutter_local_notifications desugaring
@@ -40,8 +40,9 @@ android {
     }
 
     defaultConfig {
+
         applicationId = "dev.hubert.dosetime"
-        minSdk = flutter.minSdkVersion
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

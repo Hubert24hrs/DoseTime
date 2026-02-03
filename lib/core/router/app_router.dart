@@ -36,6 +36,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
+      GoRoute(
+        path: '/disclaimer',
+        builder: (context, state) => const DisclaimerScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return ScaffoldWithNavbar(navigationShell: navigationShell);

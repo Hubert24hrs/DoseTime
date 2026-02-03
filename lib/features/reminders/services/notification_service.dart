@@ -186,7 +186,7 @@ class NotificationService {
       title,
       body,
       _nextInstanceOfTime(time),
-      NotificationDetails(
+      const NotificationDetails(
         android: AndroidNotificationDetails(
           'medication_reminders',
           'Medication Reminders',
@@ -199,19 +199,19 @@ class NotificationService {
           visibility: NotificationVisibility.public,
           autoCancel: true,
           actions: [
-            const AndroidNotificationAction(
+            AndroidNotificationAction(
               'take',
               'Take',
               showsUserInterface: true,
             ),
-            const AndroidNotificationAction(
+            AndroidNotificationAction(
               'skip',
               'Skip',
               showsUserInterface: true,
             ),
           ],
         ),
-        iOS: const DarwinNotificationDetails(
+        iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
@@ -219,6 +219,8 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: scheduleMode,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: payload,
     );
@@ -272,6 +274,8 @@ class NotificationService {
         iOS: DarwinNotificationDetails(),
       ),
       androidScheduleMode: scheduleMode,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       payload: payload,
     );
   }

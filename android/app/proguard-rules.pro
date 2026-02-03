@@ -38,3 +38,6 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# Play Core (Flutter deferred components)
+-dontwarn com.google.android.play.core.**

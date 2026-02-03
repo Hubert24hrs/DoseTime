@@ -223,7 +223,7 @@ class AdherenceInsightsScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -338,7 +338,7 @@ class AdherenceInsightsScreen extends ConsumerWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.local_fire_department, color: Colors.orange, size: 32),

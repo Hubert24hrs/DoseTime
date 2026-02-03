@@ -13,7 +13,7 @@ class AddMedicationState {
   AddMedicationState({this.isLoading = false, this.error});
 }
 
-class AddMedicationController extends Notifier<AddMedicationState> {
+class AddMedicationController extends AutoDisposeNotifier<AddMedicationState> {
   @override
   AddMedicationState build() {
     return AddMedicationState();
@@ -81,5 +81,5 @@ class AddMedicationController extends Notifier<AddMedicationState> {
 }
 
 final addMedicationControllerProvider =
-    NotifierProvider.autoDispose<AddMedicationController, AddMedicationState>(
+    AutoDisposeNotifierProvider<AddMedicationController, AddMedicationState>(
         AddMedicationController.new);
