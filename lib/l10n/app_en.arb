@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appName": "DoseTime",
+  "appName": "DoseAlert",
   "@appName": {
     "description": "The name of the application"
   },
@@ -60,11 +60,11 @@
   "needsImprovement": "Needs improvement",
   "low": "Low adherence",
   "permissionsRequired": "Permissions Required",
-  "permissionsRationale": "DoseTime needs notification permissions to remind you about your medications. Exact alarm permission ensures reminders are delivered on time, even in battery-saving mode.",
+  "permissionsRationale": "DoseAlert needs notification permissions to remind you about your medications. Exact alarm permission ensures reminders are delivered on time, even in battery-saving mode.",
   "grantPermissions": "Grant Permissions",
   "maybeLater": "Maybe Later",
   "disclaimer": "Medical Disclaimer",
-  "disclaimerText": "DoseTime is a reminder tool only and is NOT a substitute for professional medical advice. Always consult your healthcare provider.",
+  "disclaimerText": "DoseAlert is a reminder tool only and is NOT a substitute for professional medical advice. Always consult your healthcare provider.",
   "accept": "I Understand",
   "upgradeToPro": "Upgrade to Pro",
   "proFeatures": "Unlock unlimited medications, adherence insights, and PDF exports.",
@@ -76,5 +76,5 @@
   "privacyPolicy": "Privacy Policy",
   "termsOfService": "Terms of Service",
   "version": "Version",
-  "about": "About DoseTime"
+  "about": "About DoseAlert"
 }

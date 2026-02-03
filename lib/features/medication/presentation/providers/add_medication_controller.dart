@@ -59,8 +59,8 @@ class AddMedicationController extends AutoDisposeNotifier<AddMedicationState> {
       if (savedMed.frequency == 'Daily') {
         for (int i = 0; i < times.length; i++) {
           final time = times[i];
-          // Unique ID: medId * 100 + index
-          final notificationId = (savedMed.id! * 100) + i;
+          // Unique ID: medId * 1000 + index * 10
+          final notificationId = (savedMed.id! * 1000) + (i * 10);
           await notificationService.scheduleDailyNotification(
             id: notificationId,
             title: 'Time for ${savedMed.name}',

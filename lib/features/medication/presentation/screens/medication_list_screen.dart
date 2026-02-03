@@ -1,3 +1,5 @@
+import 'package:dose_time/core/widgets/three_d_button.dart';
+import 'package:dose_time/features/medication/domain/models/medication.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
@@ -26,10 +28,17 @@ class MedicationListScreen extends ConsumerWidget {
                    const SizedBox(height: 16),
                    Text('No medications yet', style: TextStyle(color: Colors.grey[600], fontSize: 18)),
                    const SizedBox(height: 24),
-                   ElevatedButton.icon(
+                   ThreeDButton(
+                     width: 200,
                      onPressed: () => context.go('/medications/add'),
-                     icon: const Icon(Icons.add),
-                     label: const Text('Add Medication'),
+                     child: const Row(
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         Icon(Icons.add, color: Colors.white),
+                         SizedBox(width: 8),
+                         Text('Add Medication', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                       ],
+                     ),
                    )
                 ],
               ),
@@ -44,11 +53,14 @@ class MedicationListScreen extends ConsumerWidget {
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Color(med.color).withValues(alpha: 0.2),
-                    child: Icon(
-                      med.icon != null ? IconData(med.icon!, fontFamily: 'MaterialIcons') : Icons.medication,
-                      color: Color(med.color),
+                   leading: GestureDetector(
+                    onTap: () => _showMedicationInfo(context, med),
+                    child: CircleAvatar(
+                      backgroundColor: Color(med.color).withValues(alpha: 0.2),
+                      child: Icon(
+                        med.icon != null ? IconData(med.icon!, fontFamily: 'MaterialIcons') : Icons.medication,
+                        color: Color(med.color),
+                      ),
                     ),
                   ),
                   title: Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -66,9 +78,12 @@ class MedicationListScreen extends ConsumerWidget {
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
       floatingActionButton: medicationsAsync.hasValue && medicationsAsync.value!.isNotEmpty 
-        ? FloatingActionButton(
+        ? ThreeDButton(
+            width: 60,
+            height: 60,
+            isFloating: true,
             onPressed: () => context.go('/medications/add'),
-            child: const Icon(Icons.add),
+            child: const Icon(Icons.add, color: Colors.white, size: 30),
           )
         : null,
     );
@@ -92,6 +107,43 @@ class MedicationListScreen extends ConsumerWidget {
                Navigator.pop(context);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMedicationInfo(BuildContext context, Medication medication) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              medication.icon != null 
+                ? IconData(medication.icon!, fontFamily: 'MaterialIcons') 
+                : Icons.medication,
+              color: Color(medication.color),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(medication.name)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Dosage: ${medication.dosage}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Frequency: ${medication.frequency}'),
+            const SizedBox(height: 8),
+            Text('Scheduled Times: ${medication.times.join(", ")}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),

@@ -1,4 +1,4 @@
-package com.example.dose_time
+package dev.hubert.dosetime
 
 import io.flutter.embedding.android.FlutterActivity
 

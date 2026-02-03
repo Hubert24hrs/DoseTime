@@ -134,6 +134,16 @@ final logDoseProvider = Provider.autoDispose((ref) {
       );
     }
     
+    // Cancel repeating notifications for this dose
+    final notificationService = NotificationService();
+    // Reconstruct the base ID: (medId * 1000) + (timeIndex * 10)
+    // We need to find the index of the time in the medication's list.
+    final timeIndex = item.medication.times.indexOf('${item.scheduledTime.hour}:${item.scheduledTime.minute}');
+    if (timeIndex != -1) {
+        final baseId = (item.medication.id! * 1000) + (timeIndex * 10);
+        await notificationService.cancelNotification(baseId);
+    }
+    
     ref.invalidate(todaysScheduleProvider);
   };
 });

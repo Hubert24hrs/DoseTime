@@ -1,3 +1,4 @@
+import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,18 +29,14 @@ class DisclaimerScreen extends ConsumerWidget {
               style: TextStyle(fontSize: 16, height: 1.5),
             ),
             const SizedBox(height: 48),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () async {
-                  await ref.read(settingsServiceProvider).setDisclaimerAccepted(true);
-                  if (context.mounted) {
-                    context.go('/home');
-                  }
-                },
-                child: const Text('I Understand & Accept'),
-              ),
+            ThreeDButton(
+              onPressed: () async {
+                await ref.read(settingsServiceProvider).setDisclaimerAccepted(true);
+                if (context.mounted) {
+                  context.go('/home');
+                }
+              },
+              child: const Text('I Understand & Accept', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           ],
         ),

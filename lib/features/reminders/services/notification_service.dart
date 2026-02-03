@@ -1,4 +1,6 @@
 import 'dart:io' show Platform;
+import 'dart:typed_data';
+import 'package:flutter_timezone/flutter_timezone.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +28,13 @@ class NotificationService {
     if (_isInitialized) return;
 
     tz.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation(await _getLocalTimezone()));
+    try {
+      final String timeZoneName = await _getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+    } catch (e) {
+      debugPrint('NotificationService: Could not set local timezone, falling back to UTC: $e');
+      tz.setLocalLocation(tz.getLocation('UTC'));
+    }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -91,9 +99,14 @@ class NotificationService {
   /// Get local timezone
   Future<String> _getLocalTimezone() async {
     try {
-      // Default to UTC if we can't detect
-      return 'UTC';
+      // In flutter_timezone 5.x, this returns a String directly or a TimezoneInfo
+      final dynamic timezone = await FlutterTimezone.getLocalTimezone();
+      if (timezone is String) return timezone;
+      // If it's a TimezoneInfo object, we might need a specific property
+      // but let's try to convert safely.
+      return timezone.toString();
     } catch (e) {
+      debugPrint('Failed to get local timezone, falling back to UTC: $e');
       return 'UTC';
     }
   }
@@ -181,51 +194,57 @@ class NotificationService {
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
 
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      id,
-      title,
-      body,
-      _nextInstanceOfTime(time),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'medication_reminders',
-          'Medication Reminders',
-          channelDescription: 'Reminders to take your medication',
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
-          enableVibration: true,
-          category: AndroidNotificationCategory.reminder,
-          visibility: NotificationVisibility.public,
-          autoCancel: true,
-          actions: [
-            AndroidNotificationAction(
-              'take',
-              'Take',
-              showsUserInterface: true,
+    // Schedule the primary notification and 5 repeats (every 10 minutes)
+    for (int i = 0; i <= 5; i++) {
+        final scheduledTime = _nextInstanceOfTime(time).add(Duration(minutes: i * 10));
+        await flutterLocalNotificationsPlugin.zonedSchedule(
+          id + i, // Unique ID for each repeat
+          i == 0 ? title : '$title (Reminder)',
+          body,
+          scheduledTime,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              'medication_reminders',
+              'Medication Reminders',
+              channelDescription: 'Reminders to take your medication',
+              importance: Importance.max,
+              priority: Priority.high,
+              playSound: true,
+              enableVibration: true,
+              vibrationPattern: Int64List.fromList([0, 500, 200, 500]), // Vibrate pattern
+              category: AndroidNotificationCategory.reminder,
+              visibility: NotificationVisibility.public,
+              autoCancel: true,
+              actions: [
+                const AndroidNotificationAction(
+                  'take',
+                  'Take',
+                  showsUserInterface: true,
+                ),
+                const AndroidNotificationAction(
+                  'skip',
+                  'Skip',
+                  showsUserInterface: true,
+                ),
+              ],
             ),
-            AndroidNotificationAction(
-              'skip',
-              'Skip',
-              showsUserInterface: true,
+            iOS: const DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+              categoryIdentifier: 'medication_reminder',
+              interruptionLevel: InterruptionLevel.timeSensitive,
             ),
-          ],
-        ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-          categoryIdentifier: 'medication_reminder',
-        ),
-      ),
-      androidScheduleMode: scheduleMode,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-      payload: payload,
-    );
+          ),
+          androidScheduleMode: scheduleMode,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+          payload: payload,
+        );
+    }
 
-    debugPrint('Scheduled notification $id for ${time.format}');
+    debugPrint('Scheduled notification $id and 5 repeats for ${time.format}');
   }
 
   /// Calculate next instance of given time
@@ -280,9 +299,12 @@ class NotificationService {
     );
   }
 
-  /// Cancel a specific notification
+  /// Cancel a specific notification and its repeats
   Future<void> cancelNotification(int id) async {
-    await flutterLocalNotificationsPlugin.cancel(id);
+    // Cancel the primary and the 5 possible repeats
+    for (int i = 0; i <= 5; i++) {
+        await flutterLocalNotificationsPlugin.cancel(id + i);
+    }
   }
 
   /// Cancel all notifications
@@ -310,10 +332,17 @@ class NotificationService {
         android: AndroidNotificationDetails(
           'general',
           'General Notifications',
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
+          channelDescription: 'General app notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
         ),
-        iOS: DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
       ),
       payload: payload,
     );

@@ -49,6 +49,7 @@ dependencies:
   
   # URL launcher for email links
   url_launcher: ^6.2.5
+  flutter_timezone: ^5.0.1
 
 dev_dependencies:
   flutter_test:
@@ -62,7 +63,7 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icon/app_icon.png"
   min_sdk_android: 23 # Matches our minSdk
-  adaptive_icon_background: "#0175C2" # Matches the blue in the icon roughly, or white
+  adaptive_icon_background: "#004D40" # Matching the new dark teal background
   adaptive_icon_foreground: "assets/icon/app_icon.png"
 
 flutter:

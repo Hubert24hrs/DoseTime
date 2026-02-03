@@ -1,3 +1,5 @@
+import 'package:dose_time/core/widgets/three_d_button.dart';
+import 'package:dose_time/features/medication/domain/models/medication.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
@@ -96,15 +98,18 @@ class _DoseCard extends ConsumerWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: color.withValues(alpha: 0.2),
-                    radius: 24,
-                    child: Icon(
-                      item.medication.icon != null 
-                        ? IconData(item.medication.icon!, fontFamily: 'MaterialIcons') 
-                        : Icons.medication,
-                      color: color,
-                      size: 28,
+                  GestureDetector(
+                    onTap: () => _showMedicationInfo(context, item.medication),
+                    child: CircleAvatar(
+                      backgroundColor: color.withValues(alpha: 0.2),
+                      radius: 24,
+                      child: Icon(
+                        item.medication.icon != null 
+                          ? IconData(item.medication.icon!, fontFamily: 'MaterialIcons') 
+                          : Icons.medication,
+                        color: color,
+                        size: 28,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -134,26 +139,24 @@ class _DoseCard extends ConsumerWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
+                      child: ThreeDButton(
+                        color: Colors.grey[400]!,
                         onPressed: () async {
                            await HapticFeedback.lightImpact();
                            ref.read(logDoseProvider)(item, 'skipped');
                         },
-                        child: const Text('Skip'),
+                        child: const Text('Skip', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color, 
-                          foregroundColor: Colors.white
-                        ),
+                      child: ThreeDButton(
+                        color: color,
                         onPressed: () async {
                            await HapticFeedback.lightImpact();
                            ref.read(logDoseProvider)(item, 'taken');
                         },
-                        child: const Text('Take'),
+                        child: const Text('Take', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -162,6 +165,43 @@ class _DoseCard extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showMedicationInfo(BuildContext context, Medication medication) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              medication.icon != null 
+                ? IconData(medication.icon!, fontFamily: 'MaterialIcons') 
+                : Icons.medication,
+              color: Color(medication.color),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(medication.name)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Dosage: ${medication.dosage}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Frequency: ${medication.frequency}'),
+            const SizedBox(height: 8),
+            Text('Scheduled Times: ${medication.times.join(", ")}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

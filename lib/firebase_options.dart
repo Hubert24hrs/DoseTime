@@ -1,4 +1,4 @@
-// Firebase configuration for DoseTime
+// Firebase configuration for DoseAlert
 // This file should be regenerated using FlutterFire CLI for production:
 // flutterfire configure
 //

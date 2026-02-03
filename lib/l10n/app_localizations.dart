@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// The name of the application
   ///
   /// In en, this message translates to:
-  /// **'DoseTime'**
+  /// **'DoseAlert'**
   String get appName;
 
   /// No description provided for @home.
@@ -317,7 +317,7 @@ abstract class AppLocalizations {
   /// No description provided for @permissionsRationale.
   ///
   /// In en, this message translates to:
-  /// **'DoseTime needs notification permissions to remind you about your medications. Exact alarm permission ensures reminders are delivered on time, even in battery-saving mode.'**
+  /// **'DoseAlert needs notification permissions to remind you about your medications. Exact alarm permission ensures reminders are delivered on time, even in battery-saving mode.'**
   String get permissionsRationale;
 
   /// No description provided for @grantPermissions.
@@ -341,7 +341,7 @@ abstract class AppLocalizations {
   /// No description provided for @disclaimerText.
   ///
   /// In en, this message translates to:
-  /// **'DoseTime is a reminder tool only and is NOT a substitute for professional medical advice. Always consult your healthcare provider.'**
+  /// **'DoseAlert is a reminder tool only and is NOT a substitute for professional medical advice. Always consult your healthcare provider.'**
   String get disclaimerText;
 
   /// No description provided for @accept.
@@ -413,7 +413,7 @@ abstract class AppLocalizations {
   /// No description provided for @about.
   ///
   /// In en, this message translates to:
-  /// **'About DoseTime'**
+  /// **'About DoseAlert'**
   String get about;
 }
 

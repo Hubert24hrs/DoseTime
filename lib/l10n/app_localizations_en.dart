@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'DoseTime';
+  String get appName => 'DoseAlert';
 
   @override
   String get home => 'Home';
@@ -131,7 +131,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permissionsRationale =>
-      'DoseTime needs notification permissions to remind you about your medications. Exact alarm permission ensures reminders are delivered on time, even in battery-saving mode.';
+      'DoseAlert needs notification permissions to remind you about your medications. Exact alarm permission ensures reminders are delivered on time, even in battery-saving mode.';
 
   @override
   String get grantPermissions => 'Grant Permissions';
@@ -144,7 +144,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get disclaimerText =>
-      'DoseTime is a reminder tool only and is NOT a substitute for professional medical advice. Always consult your healthcare provider.';
+      'DoseAlert is a reminder tool only and is NOT a substitute for professional medical advice. Always consult your healthcare provider.';
 
   @override
   String get accept => 'I Understand';
@@ -182,5 +182,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get version => 'Version';
 
   @override
-  String get about => 'About DoseTime';
+  String get about => 'About DoseAlert';
 }

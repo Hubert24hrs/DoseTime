@@ -13,16 +13,27 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize core services
-  await _initializeServices();
-  
-  final prefs = await SharedPreferences.getInstance();
+  // Initialize SharedPreferences first as it's critical for UI state
+  SharedPreferences? prefs;
+  try {
+    prefs = await SharedPreferences.getInstance();
+  } catch (e) {
+    debugPrint('Critical: Failed to initialize SharedPreferences: $e');
+  }
+
+  // Initialize other services (don't let them block prefs setup)
+  try {
+    await _initializeServices();
+  } catch (e, stack) {
+    debugPrint('Failed to initialize background services: $e');
+    debugPrint(stack.toString());
+  }
   
   runApp(ProviderScope(
     overrides: [
-      sharedPreferencesProvider.overrideWithValue(prefs),
+      if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
     ],
-    child: const DoseTimeApp(),
+    child: const DoseAlertApp(),
   ));
 }
 
@@ -41,8 +52,8 @@ Future<void> _initializeServices() async {
   await PurchaseService().initialize();
 }
 
-class DoseTimeApp extends ConsumerWidget {
-  const DoseTimeApp({super.key});
+class DoseAlertApp extends ConsumerWidget {
+  const DoseAlertApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

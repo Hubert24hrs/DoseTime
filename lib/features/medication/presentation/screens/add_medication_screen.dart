@@ -1,3 +1,4 @@
+import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/core/utils/app_constants.dart';
 import 'package:dose_time/features/medication/presentation/providers/add_medication_controller.dart';
 import 'package:flutter/material.dart';
@@ -141,9 +142,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                         child: Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton(
+                              child: ThreeDButton(
+                                height: 40,
+                                color: Colors.white,
                                 onPressed: () => _selectTime(index),
-                                child: Text(time.format(context)),
+                                child: Text(time.format(context), style: const TextStyle(color: Colors.teal)),
                               ),
                             ),
                             if (_times.length > 1)
@@ -207,13 +210,9 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _submit,
-                        child: const Text('Save Medication'),
-                      ),
+                    ThreeDButton(
+                      onPressed: _submit,
+                      child: const Text('Save Medication', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
                   ],
                 ),

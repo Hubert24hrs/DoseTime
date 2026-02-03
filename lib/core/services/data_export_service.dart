@@ -98,8 +98,8 @@ class DataExportService {
       
       await Share.shareXFiles(
         [XFile(file.path)],
-        subject: 'DoseTime Data Export',
-        text: 'Your DoseTime medication data export',
+        subject: 'DoseAlert Data Export',
+        text: 'Your DoseAlert medication data export',
       );
     } catch (e) {
       debugPrint('Export error: $e');

@@ -1,6 +1,6 @@
 {
   "@@locale": "es",
-  "appName": "DoseTime",
+  "appName": "DoseAlert",
   "home": "Inicio",
   "medications": "Medicamentos",
   "history": "Historial",
@@ -36,11 +36,11 @@
   "needsImprovement": "Necesita mejorar",
   "low": "Adherencia baja",
   "permissionsRequired": "Permisos Requeridos",
-  "permissionsRationale": "DoseTime necesita permisos de notificación para recordarte tus medicamentos. El permiso de alarma exacta asegura que los recordatorios lleguen a tiempo.",
+  "permissionsRationale": "DoseAlert necesita permisos de notificación para recordarte tus medicamentos. El permiso de alarma exacta asegura que los recordatorios lleguen a tiempo.",
   "grantPermissions": "Otorgar Permisos",
   "maybeLater": "Quizás Después",
   "disclaimer": "Aviso Médico",
-  "disclaimerText": "DoseTime es solo una herramienta de recordatorio y NO sustituye el consejo médico profesional. Siempre consulta a tu médico.",
+  "disclaimerText": "DoseAlert es solo una herramienta de recordatorio y NO sustituye el consejo médico profesional. Siempre consulta a tu médico.",
   "accept": "Entiendo",
   "upgradeToPro": "Actualizar a Pro",
   "proFeatures": "Desbloquea medicamentos ilimitados, estadísticas de adherencia y exportación en PDF.",
@@ -52,5 +52,5 @@
   "privacyPolicy": "Política de Privacidad",
   "termsOfService": "Términos de Servicio",
   "version": "Versión",
-  "about": "Acerca de DoseTime"
+  "about": "Acerca de DoseAlert"
 }

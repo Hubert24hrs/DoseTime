@@ -1,3 +1,4 @@
+import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
@@ -134,24 +135,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             // Next/Get Started button
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _pages[_currentPage].color,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  onPressed: _nextPage,
-                  child: Text(
-                    _currentPage < _pages.length - 1 ? 'Next' : 'Get Started',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+              child: ThreeDButton(
+                color: _pages[_currentPage].color,
+                onPressed: _nextPage,
+                child: Text(
+                  _currentPage < _pages.length - 1 ? 'Next' : 'Get Started',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),

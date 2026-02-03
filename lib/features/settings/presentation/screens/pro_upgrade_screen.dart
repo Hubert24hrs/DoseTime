@@ -1,3 +1,4 @@
+import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/core/services/purchase_service.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
 import 'package:flutter/material.dart';
@@ -55,9 +56,11 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
               error: (e, _) => _buildFallbackPurchaseButton(),
             ),
             const SizedBox(height: 12),
-            TextButton(
+            ThreeDButton(
+              height: 40,
+              color: Colors.white,
               onPressed: _isLoading ? null : _restorePurchases,
-              child: const Text('Restore Purchases'),
+              child: const Text('Restore Purchases', style: TextStyle(color: Colors.teal)),
             ),
           ],
         ),
@@ -69,49 +72,37 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
     final package = offerings?.current?.availablePackages.firstOrNull;
     final priceString = package?.storeProduct.priceString ?? '\$4.99';
 
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.amber,
-        foregroundColor: Colors.black,
-      ),
+    return ThreeDButton(
+      color: Colors.amber,
       onPressed: _isLoading ? null : () => _purchasePro(package),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: _isLoading
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(
-                'Get Lifetime Access - $priceString',
-                style: const TextStyle(fontSize: 18),
-              ),
-      ),
+      child: _isLoading
+          ? const SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+            )
+          : Text(
+              'Get Lifetime Access - $priceString',
+              style: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold),
+            ),
     );
   }
 
   Widget _buildFallbackPurchaseButton() {
     // Fallback when offerings fail to load (e.g., RevenueCat not configured)
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.amber,
-        foregroundColor: Colors.black,
-      ),
+    return ThreeDButton(
+      color: Colors.amber,
       onPressed: _isLoading ? null : _simulatePurchase,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: _isLoading
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Text(
-                'Get Lifetime Access - \$4.99',
-                style: TextStyle(fontSize: 18),
-              ),
-      ),
+      child: _isLoading
+          ? const SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+            )
+          : const Text(
+              'Get Lifetime Access - \$4.99',
+              style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold),
+            ),
     );
   }
 

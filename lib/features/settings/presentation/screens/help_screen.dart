@@ -33,7 +33,7 @@ class HelpScreen extends StatelessWidget {
             children: [
               _buildFAQItem(
                 question: 'Why am I not receiving reminders?',
-                answer: 'Make sure notifications are enabled in your device settings. Go to Settings > Apps > DoseTime > Notifications and enable them. Also check that battery optimization is disabled for the app.',
+                answer: 'Make sure notifications are enabled in your device settings. Go to Settings > Apps > DoseAlert > Notifications and enable them. Also check that battery optimization is disabled for the app.',
               ),
               _buildFAQItem(
                 question: 'How do I change reminder times?',
@@ -41,7 +41,7 @@ class HelpScreen extends StatelessWidget {
               ),
               _buildFAQItem(
                 question: 'Do reminders work when my phone is off?',
-                answer: 'No, reminders require your phone to be on. However, DoseTime will reschedule all reminders when your phone restarts.',
+                answer: 'No, reminders require your phone to be on. However, DoseAlert will reschedule all reminders when your phone restarts.',
               ),
             ],
           ),
@@ -68,7 +68,7 @@ class HelpScreen extends StatelessWidget {
             title: 'Pro Features',
             children: [
               _buildFAQItem(
-                question: 'What do I get with DoseTime Pro?',
+                question: 'What do I get with DoseAlert Pro?',
                 answer: 'Pro includes unlimited medications (free is limited to 3), adherence insights with charts, PDF report export, and priority support.',
               ),
               _buildFAQItem(
@@ -156,7 +156,7 @@ class HelpScreen extends StatelessWidget {
   }
 
   Future<void> _launchEmail() async {
-    final uri = Uri.parse('mailto:support@hubert.dev?subject=DoseTime%20Help');
+    final uri = Uri.parse('mailto:support@hubert.dev?subject=DoseAlert%20Help');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }

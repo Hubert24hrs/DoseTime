@@ -81,7 +81,7 @@ class PermissionService {
           builder: (context) => AlertDialog(
             title: const Text('Permissions Required'),
             content: const Text(
-              'DoseTime needs notification permissions to remind you about your medications. '
+              'DoseAlert needs notification permissions to remind you about your medications. '
               'Exact alarm permission ensures reminders are delivered on time, even in battery-saving mode.',
             ),
             actions: [
