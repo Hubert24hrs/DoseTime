@@ -78,7 +78,9 @@ class _DoseCard extends ConsumerWidget {
                         Icon(Icons.access_time, size: 16, color: color),
                         const SizedBox(width: 4),
                         Text(
-                          item.scheduledTime.format(context),
+                          (item.medication.frequency == 'As Needed' && item.log == null)
+                              ? 'Whenever needed'
+                              : item.scheduledTime.format(context),
                           style: TextStyle(
                             color: color, 
                             fontWeight: FontWeight.bold,
@@ -93,6 +95,18 @@ class _DoseCard extends ConsumerWidget {
                     Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.greenAccent, borderRadius: BorderRadius.circular(16)), child: const Text('Taken', style: TextStyle(fontSize: 12)))
                   else if (item.isSkipped)
                     Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.circular(16)), child: const Text('Skipped', style: TextStyle(fontSize: 12)))
+                  else if (item.medication.stockQuantity != null && item.medication.refillThreshold != null && item.medication.stockQuantity! <= item.medication.refillThreshold!)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.orange.shade100, borderRadius: BorderRadius.circular(16)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded, size: 12, color: Colors.orange),
+                          const SizedBox(width: 4),
+                          Text('Low Stock: ${item.medication.stockQuantity!.toInt()}', style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -141,10 +155,7 @@ class _DoseCard extends ConsumerWidget {
                     Expanded(
                       child: ThreeDButton(
                         color: Colors.grey[400]!,
-                        onPressed: () async {
-                           await HapticFeedback.lightImpact();
-                           ref.read(logDoseProvider)(item, 'skipped');
-                        },
+                        onPressed: () => _showSkipOptions(context, ref),
                         child: const Text('Skip', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -164,6 +175,91 @@ class _DoseCard extends ConsumerWidget {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showSkipOptions(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Manage Dosage',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'What do you want to do with this dose of ${item.medication.name}?',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            ThreeDButton(
+              color: Colors.orange.shade400,
+              onPressed: () async {
+                Navigator.pop(context);
+                final ns = NotificationService();
+                await ns.scheduleSnoozeNotification(
+                  id: item.medication.id!,
+                  title: item.medication.name,
+                  body: item.medication.name,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Reminding you again in 10 minutes!'))
+                );
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.timer_outlined, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Take Later (10 mins)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            ThreeDButton(
+              color: Colors.grey.shade500,
+              onPressed: () {
+                Navigator.pop(context);
+                ref.read(logDoseProvider)(item, 'skipped');
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.skip_next, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Skip for Today', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            ThreeDButton(
+              color: Colors.red.shade400,
+              onPressed: () {
+                Navigator.pop(context);
+                ref.read(logDoseProvider)(item, 'delete');
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.delete_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Delete Entry', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -194,6 +290,16 @@ class _DoseCard extends ConsumerWidget {
             Text('Frequency: ${medication.frequency}'),
             const SizedBox(height: 8),
             Text('Scheduled Times: ${medication.times.join(", ")}'),
+            if (medication.stockQuantity != null) ...[
+              const SizedBox(height: 8),
+              Text('Current Stock: ${medication.stockQuantity!.toInt()}', 
+                style: TextStyle(
+                  color: (medication.refillThreshold != null && medication.stockQuantity! <= medication.refillThreshold!) 
+                    ? Colors.red : Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ],
         ),
         actions: [

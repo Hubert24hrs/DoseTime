@@ -48,7 +48,7 @@ Future<void> _initializeServices() async {
   // Initialize secure storage
   await SecureStorageService().initialize();
   
-  // Initialize in-app purchases (mock mode for now)
+  // Initialize in-app purchases
   await PurchaseService().initialize();
 }
 

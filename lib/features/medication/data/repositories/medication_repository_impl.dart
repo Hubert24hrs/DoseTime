@@ -106,4 +106,14 @@ class MedicationRepositoryImpl implements MedicationRepository {
       whereArgs: [logId],
     );
   }
+
+  @override
+  Future<int> deleteLog(int logId) async {
+    final db = await _dbHelper.database;
+    return await db.delete(
+      'dose_logs',
+      where: 'id = ?',
+      whereArgs: [logId],
+    );
+  }
 }

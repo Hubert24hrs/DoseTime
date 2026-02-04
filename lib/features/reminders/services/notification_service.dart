@@ -19,9 +19,17 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
+  String _detectedTimezone = 'Unknown';
+  bool _isUtcFallback = false;
 
   /// Check if the service has been initialized
   bool get isInitialized => _isInitialized;
+
+  /// Get the detected timezone name
+  String get detectedTimezone => _detectedTimezone;
+
+  /// Check if the service fell back to UTC
+  bool get isUtcFallback => _isUtcFallback;
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -29,10 +37,13 @@ class NotificationService {
 
     tz.initializeTimeZones();
     try {
-      final String timeZoneName = await _getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
+      _detectedTimezone = await _getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(_detectedTimezone));
+      _isUtcFallback = false;
     } catch (e) {
       debugPrint('NotificationService: Could not set local timezone, falling back to UTC: $e');
+      _detectedTimezone = 'UTC';
+      _isUtcFallback = true;
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
 
@@ -194,8 +205,8 @@ class NotificationService {
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
 
-    // Schedule the primary notification and 5 repeats (every 10 minutes)
-    for (int i = 0; i <= 5; i++) {
+    // Schedule the primary notification and 6 repeats (every 10 minutes for an hour)
+    for (int i = 0; i <= 6; i++) {
         final scheduledTime = _nextInstanceOfTime(time).add(Duration(minutes: i * 10));
         await flutterLocalNotificationsPlugin.zonedSchedule(
           id + i, // Unique ID for each repeat
@@ -206,14 +217,15 @@ class NotificationService {
             android: AndroidNotificationDetails(
               'medication_reminders',
               'Medication Reminders',
-              channelDescription: 'Reminders to take your medication',
+              channelDescription: 'Important reminders to take your medication',
               importance: Importance.max,
               priority: Priority.high,
               playSound: true,
               enableVibration: true,
-              vibrationPattern: Int64List.fromList([0, 500, 200, 500]), // Vibrate pattern
-              category: AndroidNotificationCategory.reminder,
+              vibrationPattern: Int64List.fromList([0, 400, 200, 400]), // Sharp pattern
+              category: AndroidNotificationCategory.alarm,
               visibility: NotificationVisibility.public,
+              fullScreenIntent: true,
               autoCancel: true,
               actions: [
                 const AndroidNotificationAction(
@@ -297,12 +309,26 @@ class NotificationService {
           UILocalNotificationDateInterpretation.absoluteTime,
       payload: payload,
     );
+  /// Schedule a snooze notification (10 minutes)
+  Future<void> scheduleSnoozeNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    final scheduledTime = DateTime.now().add(const Duration(minutes: 10));
+    await scheduleOneTimeNotification(
+      id: id + 9999, // Use a high offset to avoid collision
+      title: '$title (Snoozed)',
+      body: 'Time to take your $body',
+      scheduledDateTime: scheduledTime,
+      payload: 'snooze',
+    );
   }
 
   /// Cancel a specific notification and its repeats
   Future<void> cancelNotification(int id) async {
-    // Cancel the primary and the 5 possible repeats
-    for (int i = 0; i <= 5; i++) {
+    // Cancel the primary and the 6 repeats (total 7)
+    for (int i = 0; i <= 6; i++) {
         await flutterLocalNotificationsPlugin.cancel(id + i);
     }
   }

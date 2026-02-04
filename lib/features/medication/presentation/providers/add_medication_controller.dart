@@ -26,6 +26,8 @@ class AddMedicationController extends AutoDisposeNotifier<AddMedicationState> {
     required List<TimeOfDay> times,
     required int color,
     IconData? icon,
+    double? stockQuantity,
+    double? refillThreshold,
   }) async {
     state = AddMedicationState(isLoading: true);
     try {
@@ -50,6 +52,8 @@ class AddMedicationController extends AutoDisposeNotifier<AddMedicationState> {
         times: timesList,
         color: color,
         icon: icon?.codePoint,
+        stockQuantity: stockQuantity,
+        refillThreshold: refillThreshold,
       );
 
       final savedMed = await repository.createMedication(medication);
@@ -71,6 +75,11 @@ class AddMedicationController extends AutoDisposeNotifier<AddMedicationState> {
       }
 
       ref.invalidate(medicationListProvider);
+      ref.invalidate(todaysScheduleProvider);
+      
+      // Ensure permissions are granted before returning
+      await notificationService.requestPermissions();
+      
       state = AddMedicationState(isLoading: false);
       return true;
     } catch (e) {

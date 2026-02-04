@@ -8,6 +8,8 @@ class Medication {
   final List<String> times; // ["08:00", "20:00"]
   final int color;
   final int? icon;
+  final double? stockQuantity;
+  final double? refillThreshold;
 
   Medication({
     this.id,
@@ -17,6 +19,8 @@ class Medication {
     required this.times,
     required this.color,
     this.icon,
+    this.stockQuantity,
+    this.refillThreshold,
   });
 
   Map<String, dynamic> toMap() {
@@ -28,6 +32,8 @@ class Medication {
       'times': jsonEncode(times),
       'color': color,
       'icon': icon,
+      'stock_quantity': stockQuantity,
+      'refill_threshold': refillThreshold,
     };
   }
 
@@ -40,6 +46,8 @@ class Medication {
       times: List<String>.from(jsonDecode(map['times'])),
       color: map['color'],
       icon: map['icon'],
+      stockQuantity: map['stock_quantity']?.toDouble(),
+      refillThreshold: map['refill_threshold']?.toDouble(),
     );
   }
 
@@ -51,6 +59,8 @@ class Medication {
     List<String>? times,
     int? color,
     int? icon,
+    double? stockQuantity,
+    double? refillThreshold,
   }) {
     return Medication(
       id: id ?? this.id,
@@ -60,6 +70,8 @@ class Medication {
       times: times ?? this.times,
       color: color ?? this.color,
       icon: icon ?? this.icon,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
+      refillThreshold: refillThreshold ?? this.refillThreshold,
     );
   }
 }

@@ -29,6 +29,10 @@ class HistoryScreen extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final log = logs[index];
                   final med = medMap[log.medicationId];
+                  
+                  final displayName = log.medicationName ?? med?.name ?? 'Unknown Medication';
+                  final displayColor = log.medicationColor != null ? Color(log.medicationColor!) : (med != null ? Color(med.color) : Colors.grey);
+                  
                   final dateStr = DateFormat('MMM d, y • HH:mm').format(log.scheduledTime);
                   
                   return ListTile(
@@ -38,7 +42,10 @@ class HistoryScreen extends ConsumerWidget {
                       color: log.status == 'taken' ? Colors.green : 
                              log.status == 'skipped' ? Colors.grey : Colors.red,
                     ),
-                    title: Text(med?.name ?? 'Unknown Medication'),
+                    title: Text(
+                      displayName,
+                      style: TextStyle(color: displayColor, fontWeight: FontWeight.bold),
+                    ),
                     subtitle: Text('$dateStr - ${log.status.toUpperCase()}'),
                   );
                 },

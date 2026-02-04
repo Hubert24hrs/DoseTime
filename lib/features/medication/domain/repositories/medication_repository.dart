@@ -14,4 +14,5 @@ abstract class MedicationRepository {
   Future<List<DoseLog>> getLogsForDate(DateTime date);
   Future<List<DoseLog>> getAllLogs();
   Future<int> updateLogStatus(int logId, String status, DateTime? takenTime);
+  Future<int> deleteLog(int logId);
 }

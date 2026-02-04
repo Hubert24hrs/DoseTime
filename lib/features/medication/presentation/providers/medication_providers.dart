@@ -66,42 +66,61 @@ final todaysScheduleProvider = FutureProvider.autoDispose<List<DoseScheduleItem>
 
   final List<DoseScheduleItem> items = [];
 
-  for (final med in medications) {
-    if (med.frequency == 'Daily') { // MVP logic
-      for (final timeStr in med.times) {
-        final parts = timeStr.split(':');
-        final hour = int.parse(parts[0]);
-        final minute = int.parse(parts[1]);
-        final time = TimeOfDay(hour: hour, minute: minute);
+    // Unified logic for all medication frequencies
+    for (final med in medications) {
+      if (med.frequency == 'Daily') {
+        for (final timeStr in med.times) {
+          final parts = timeStr.split(':');
+          final hour = int.parse(parts[0]);
+          final minute = int.parse(parts[1]);
+          final time = TimeOfDay(hour: hour, minute: minute);
 
-        // Find log matches logic: same med_id and same scheduled time
-        // Note: Repository getLogsForDate filters by date YYYY-MM-DD
-        // We need to match precise scheduled time string in database if we stored it fully
-        // But simpler: Check if we have a log for this med that loosely matches this time?
-        // Let's refine Log logic: log.scheduledTime should be today at HH:MM
+          final log = logs.firstWhere(
+            (l) => l.medicationId == med.id && 
+                   l.scheduledTime.hour == hour && 
+                   l.scheduledTime.minute == minute,
+            orElse: () => DoseLog(medicationId: -1, scheduledTime: DateTime(0), status: 'placeholder'),
+          );
+          
+          items.add(DoseScheduleItem(
+            medication: med, 
+            scheduledTime: time, 
+            log: log.medicationId != -1 ? log : null
+          ));
+        }
+      } else if (med.frequency == 'As Needed') {
+        final medLogs = logs.where((l) => l.medicationId == med.id).toList();
         
-        final log = logs.firstWhere(
-          (l) => l.medicationId == med.id && 
-                 l.scheduledTime.hour == hour && 
-                 l.scheduledTime.minute == minute,
-          orElse: () => DoseLog(medicationId: -1, scheduledTime: DateTime(0), status: 'placeholder'),
-        );
-        
-        items.add(DoseScheduleItem(
-          medication: med, 
-          scheduledTime: time, 
-          log: log.medicationId != -1 ? log : null
-        ));
+        if (medLogs.isEmpty) {
+          items.add(DoseScheduleItem(
+            medication: med,
+            scheduledTime: const TimeOfDay(hour: 0, minute: 0), // Use 0:00 for PRN
+            log: null,
+          ));
+        } else {
+          for (final log in medLogs) {
+            items.add(DoseScheduleItem(
+              medication: med,
+              scheduledTime: TimeOfDay.fromDateTime(log.takenTime ?? log.scheduledTime),
+              log: log,
+            ));
+          }
+          // Add one prompt to take it again
+          items.add(DoseScheduleItem(
+            medication: med,
+            scheduledTime: const TimeOfDay(hour: 0, minute: 0),
+            log: null,
+          ));
+        }
       }
     }
-  }
 
-  // Sort by time
-  items.sort((a, b) {
-    final aMin = a.scheduledTime.hour * 60 + a.scheduledTime.minute;
-    final bMin = b.scheduledTime.hour * 60 + b.scheduledTime.minute;
-    return aMin.compareTo(bMin);
-  });
+    // Sort by time
+    items.sort((a, b) {
+      final aMin = a.scheduledTime.hour * 60 + a.scheduledTime.minute;
+      final bMin = b.scheduledTime.hour * 60 + b.scheduledTime.minute;
+      return aMin.compareTo(bMin);
+    });
 
   return items;
 });
@@ -117,10 +136,20 @@ final logDoseProvider = Provider.autoDispose((ref) {
       item.scheduledTime.hour, item.scheduledTime.minute
     );
 
+    if (status == 'delete') {
+      if (item.log != null && item.log!.id != null) {
+        await repository.deleteLog(item.log!.id!);
+      }
+      ref.invalidate(todaysScheduleProvider);
+      return;
+    }
+
     if (item.log == null) {
       // Create new log
       await repository.logDose(DoseLog(
         medicationId: item.medication.id!,
+        medicationName: item.medication.name,
+        medicationColor: item.medication.color,
         scheduledTime: scheduleDate,
         takenTime: status == 'taken' ? now : null,
         status: status,
@@ -132,6 +161,11 @@ final logDoseProvider = Provider.autoDispose((ref) {
         status, 
         status == 'taken' ? now : null
       );
+      
+      // If updating, we might want to also ensure name/color are there if they weren't before
+      // (for legacy logs during migration)
+      // But repo.updateLogStatus only takes status and time. 
+      // Let's add a more generic updateLog to repo later if needed.
     }
     
     // Cancel repeating notifications for this dose
@@ -145,5 +179,17 @@ final logDoseProvider = Provider.autoDispose((ref) {
     }
     
     ref.invalidate(todaysScheduleProvider);
+
+    // Inventory Management: Decrement stock if applicable and status is 'taken'
+    if (status == 'taken' && item.medication.stockQuantity != null) {
+      final currentStock = item.medication.stockQuantity!;
+      if (currentStock > 0) {
+        final updatedMed = item.medication.copyWith(
+          stockQuantity: currentStock - 1,
+        );
+        await repository.updateMedication(updatedMed);
+        ref.invalidate(medicationListProvider);
+      }
+    }
   };
 });

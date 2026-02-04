@@ -16,8 +16,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _dosageController = TextEditingController();
+  final _stockController = TextEditingController();
+  final _thresholdController = TextEditingController();
   
   String _frequency = 'Daily';
+  bool _trackInventory = false;
   final List<TimeOfDay> _times = [const TimeOfDay(hour: 8, minute: 0)];
   Color _selectedColor = AppConstants.medicationColors.first;
   IconData _selectedIcon = AppConstants.medicationIcons.first;
@@ -26,6 +29,8 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   void dispose() {
     _nameController.dispose();
     _dosageController.dispose();
+    _stockController.dispose();
+    _thresholdController.dispose();
     super.dispose();
   }
 
@@ -50,6 +55,8 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
         times: _times,
         color: _selectedColor.toARGB32(),
         icon: _selectedIcon,
+        stockQuantity: _trackInventory ? double.tryParse(_stockController.text) : null,
+        refillThreshold: _trackInventory ? double.tryParse(_thresholdController.text) : null,
       );
 
       if (success && mounted) {
@@ -120,48 +127,91 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Reminder Times', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle, color: Colors.teal),
-                          onPressed: () {
-                            setState(() {
-                              _times.add(const TimeOfDay(hour: 8, minute: 0));
-                            });
-                          },
-                        ),
-                      ],
+                    SwitchListTile(
+                      title: const Text('Track Inventory', style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Alert when pills are running low'),
+                      value: _trackInventory,
+                      onChanged: (val) => setState(() => _trackInventory = val),
                     ),
-                    ..._times.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final time = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ThreeDButton(
-                                height: 40,
-                                color: Colors.white,
-                                onPressed: () => _selectTime(index),
-                                child: Text(time.format(context), style: const TextStyle(color: Colors.teal)),
+                    if (_trackInventory) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _stockController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: const InputDecoration(
+                                labelText: 'Current Stock',
+                                border: OutlineInputBorder(),
+                                suffixText: 'units',
                               ),
+                              validator: (value) => _trackInventory && (value == null || value.isEmpty) 
+                                ? 'Required' : null,
                             ),
-                            if (_times.length > 1)
-                              IconButton(
-                                icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
-                                onPressed: () {
-                                  setState(() {
-                                    _times.removeAt(index);
-                                  });
-                                },
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _thresholdController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: const InputDecoration(
+                                labelText: 'Alert at',
+                                border: OutlineInputBorder(),
+                                suffixText: 'left',
                               ),
-                          ],
-                        ),
-                      );
-                    }),
+                              validator: (value) => _trackInventory && (value == null || value.isEmpty) 
+                                ? 'Required' : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (_frequency == 'Daily') ...[
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Reminder Times', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle, color: Colors.teal),
+                            onPressed: () {
+                              setState(() {
+                                _times.add(const TimeOfDay(hour: 8, minute: 0));
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      ..._times.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final time = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: ThreeDButton(
+                                  height: 40,
+                                  color: Colors.white,
+                                  onPressed: () => _selectTime(index),
+                                  child: Text(time.format(context), style: const TextStyle(color: Colors.teal)),
+                                ),
+                              ),
+                              if (_times.length > 1)
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                                  onPressed: () {
+                                    setState(() {
+                                      _times.removeAt(index);
+                                    });
+                                  },
+                                ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
                     const SizedBox(height: 24),
                     const Text('Appearance', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),

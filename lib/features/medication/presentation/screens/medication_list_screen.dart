@@ -64,7 +64,23 @@ class MedicationListScreen extends ConsumerWidget {
                     ),
                   ),
                   title: Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('${med.dosage} • ${med.frequency}'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${med.dosage} • ${med.frequency}'),
+                      if (med.stockQuantity != null)
+                        Text(
+                          'Stock: ${med.stockQuantity!.toInt()} units',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: (med.refillThreshold != null && med.stockQuantity! <= med.refillThreshold!)
+                                ? Colors.red : Colors.grey[600],
+                            fontWeight: (med.refillThreshold != null && med.stockQuantity! <= med.refillThreshold!)
+                                ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                    ],
+                  ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.grey),
                     onPressed: () => _confirmDelete(context, ref, med.id!),
@@ -138,6 +154,18 @@ class MedicationListScreen extends ConsumerWidget {
             Text('Frequency: ${medication.frequency}'),
             const SizedBox(height: 8),
             Text('Scheduled Times: ${medication.times.join(", ")}'),
+            if (medication.stockQuantity != null) ...[
+              const SizedBox(height: 8),
+              Text('Stock: ${medication.stockQuantity!.toInt()} units', 
+                style: TextStyle(
+                  color: (medication.refillThreshold != null && medication.stockQuantity! <= medication.refillThreshold!) 
+                    ? Colors.red : Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (medication.refillThreshold != null)
+                Text('Refill alert at: ${medication.refillThreshold!.toInt()} units', style: const TextStyle(fontSize: 12)),
+            ],
           ],
         ),
         actions: [
