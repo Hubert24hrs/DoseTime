@@ -1,6 +1,7 @@
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/features/medication/domain/models/medication.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
+import 'package:dose_time/features/reminders/services/notification_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -214,6 +215,7 @@ class _DoseCard extends ConsumerWidget {
                   title: item.medication.name,
                   body: item.medication.name,
                 );
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Reminding you again in 10 minutes!'))
                 );

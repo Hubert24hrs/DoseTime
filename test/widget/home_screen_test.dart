@@ -29,6 +29,8 @@ class FakeMedicationRepository implements MedicationRepository {
   Future<int> updateLogStatus(int logId, String status, DateTime? takenTime) async => 1;
   @override
   Future<int> updateMedication(Medication medication) async => 1;
+  @override
+  Future<int> deleteLog(int logId) async => 1;
 }
 
 void main() {

@@ -1,5 +1,4 @@
 import 'dart:io' show Platform;
-import 'dart:typed_data';
 import 'package:flutter_timezone/flutter_timezone.dart';
 
 import 'package:flutter/foundation.dart';
@@ -309,6 +308,8 @@ class NotificationService {
           UILocalNotificationDateInterpretation.absoluteTime,
       payload: payload,
     );
+  }
+
   /// Schedule a snooze notification (10 minutes)
   Future<void> scheduleSnoozeNotification({
     required int id,
