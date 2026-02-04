@@ -103,7 +103,6 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: ns.isUtcFallback ? 'Fallback active (UTC)' : 'Detected correctly',
             subtitleColor: ns.isUtcFallback ? Colors.orange : Colors.green,
           ),
-          ),
         ],
       ),
     );
