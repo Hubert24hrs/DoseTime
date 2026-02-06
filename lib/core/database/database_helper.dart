@@ -19,7 +19,7 @@ class DatabaseHelper {
     if (kIsWeb) {
       // Initialize FFI for web
       databaseFactory = databaseFactoryFfiWeb;
-      return await openDatabase(filePath, version: 3, onCreate: _createDB, onUpgrade: _onUpgrade);
+      return await openDatabase(filePath, version: 5, onCreate: _createDB, onUpgrade: _onUpgrade);
     }
     
     final dbPath = await getDatabasesPath();
@@ -27,7 +27,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -41,6 +41,29 @@ class DatabaseHelper {
     if (oldVersion < 3) {
       await db.execute('ALTER TABLE dose_logs ADD COLUMN medication_name TEXT');
       await db.execute('ALTER TABLE dose_logs ADD COLUMN medication_color INTEGER');
+    }
+    if (oldVersion < 4) {
+      // New columns for enhanced medication management
+      await db.execute('ALTER TABLE medications ADD COLUMN medication_type TEXT');
+      await db.execute('ALTER TABLE medications ADD COLUMN instructions TEXT');
+      await db.execute('ALTER TABLE medications ADD COLUMN start_date TEXT');
+      await db.execute('ALTER TABLE medications ADD COLUMN end_date TEXT');
+      await db.execute('ALTER TABLE medications ADD COLUMN image_path TEXT');
+      await db.execute('ALTER TABLE medications ADD COLUMN is_archived INTEGER DEFAULT 0');
+    }
+    if (oldVersion < 5) {
+      // Contacts table
+      await db.execute('''
+      CREATE TABLE contacts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        phone TEXT,
+        email TEXT,
+        address TEXT,
+        notes TEXT
+      )
+      ''');
     }
   }
 
@@ -60,7 +83,13 @@ class DatabaseHelper {
       color $intType,
       icon $intNullable,
       stock_quantity REAL,
-      refill_threshold REAL
+      refill_threshold REAL,
+      medication_type TEXT,
+      instructions TEXT,
+      start_date TEXT,
+      end_date TEXT,
+      image_path TEXT,
+      is_archived INTEGER DEFAULT 0
     )
     ''');
 
@@ -76,6 +105,26 @@ class DatabaseHelper {
       FOREIGN KEY (medication_id) REFERENCES medications (id) ON DELETE CASCADE
     )
     ''');
+
+    await db.execute('''
+    CREATE TABLE contacts (
+      id $idType,
+      name $textType,
+      type $textType,
+      phone TEXT,
+      email TEXT,
+      address TEXT,
+      notes TEXT
+    )
+    ''');
+  }
+
+  /// Delete all data from all tables
+  Future<void> deleteAllData() async {
+    final db = await instance.database;
+    await db.delete('dose_logs');
+    await db.delete('medications');
+    await db.delete('contacts');
   }
 
   Future<void> close() async {

@@ -36,7 +36,7 @@ void main() {
       });
 
       test('should return true after upgrading', () async {
-        await settingsService.setPro(true);
+        await settingsService.setIsPro(true);
         expect(settingsService.isPro, true);
       });
     });

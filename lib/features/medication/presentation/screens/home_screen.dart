@@ -114,16 +114,23 @@ class _DoseCard extends ConsumerWidget {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () => _showMedicationInfo(context, item.medication),
-                    child: CircleAvatar(
-                      backgroundColor: color.withValues(alpha: 0.2),
-                      radius: 24,
-                      child: Icon(
-                        item.medication.icon != null 
-                          ? IconData(item.medication.icon!, fontFamily: 'MaterialIcons') 
-                          : Icons.medication,
-                        color: color,
-                        size: 28,
+                    onTap: () {
+                       HapticFeedback.selectionClick();
+                       _showMedicationInfo(context, item.medication);
+                    },
+                    child: Semantics(
+                      label: 'View details for ${item.medication.name}',
+                      button: true,
+                      child: CircleAvatar(
+                        backgroundColor: color.withValues(alpha: 0.2),
+                        radius: 24,
+                        child: Icon(
+                          item.medication.icon != null 
+                            ? IconData(item.medication.icon!, fontFamily: 'MaterialIcons') 
+                            : Icons.medication,
+                          color: color,
+                          size: 28,
+                        ),
                       ),
                     ),
                   ),
@@ -215,6 +222,7 @@ class _DoseCard extends ConsumerWidget {
                   title: item.medication.name,
                   body: item.medication.name,
                 );
+                await HapticFeedback.mediumImpact();
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Reminding you again in 10 minutes!'))
@@ -234,6 +242,7 @@ class _DoseCard extends ConsumerWidget {
               color: Colors.grey.shade500,
               onPressed: () {
                 Navigator.pop(context);
+                HapticFeedback.selectionClick();
                 ref.read(logDoseProvider)(item, 'skipped');
               },
               child: const Row(
@@ -250,6 +259,7 @@ class _DoseCard extends ConsumerWidget {
               color: Colors.red.shade400,
               onPressed: () {
                 Navigator.pop(context);
+                HapticFeedback.heavyImpact();
                 ref.read(logDoseProvider)(item, 'delete');
               },
               child: const Row(

@@ -9,17 +9,23 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsServiceProvider);
     
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          // Pro Status
           ListTile(
             leading: Icon(Icons.star, color: settings.isPro ? Colors.amber : Colors.grey),
             title: const Text('Pro Status'),
@@ -33,6 +39,94 @@ class SettingsScreen extends ConsumerWidget {
             onTap: !settings.isPro ? () => context.push('/upgrade') : null,
           ),
           const Divider(),
+          
+          // Appearance Section
+          _buildSectionHeader('Appearance'),
+          ListTile(
+            leading: const Icon(Icons.palette_outlined),
+            title: const Text('Theme'),
+            subtitle: Text(_getThemeLabel(settings.themeMode)),
+            trailing: DropdownButton<ThemeMode>(
+              value: settings.themeMode,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
+                DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
+                DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+              ],
+              onChanged: (mode) async {
+                if (mode != null) {
+                  await settings.setThemeMode(mode);
+                  setState(() {});
+                }
+              },
+            ),
+          ),
+          const Divider(),
+          
+          // Notification Settings Section
+          _buildSectionHeader('Notifications'),
+          SwitchListTile(
+            secondary: const Icon(Icons.do_not_disturb_on_outlined),
+            title: const Text('Quiet Hours'),
+            subtitle: Text(settings.quietHoursEnabled 
+                ? '${settings.quietHoursStart.format(context)} - ${settings.quietHoursEnd.format(context)}'
+                : 'Disabled'),
+            value: settings.quietHoursEnabled,
+            onChanged: (value) async {
+              await settings.setQuietHoursEnabled(value);
+              setState(() {});
+            },
+          ),
+          if (settings.quietHoursEnabled) ...[
+            ListTile(
+              contentPadding: const EdgeInsets.only(left: 72, right: 16),
+              title: const Text('Start Time'),
+              trailing: TextButton(
+                child: Text(settings.quietHoursStart.format(context)),
+                onPressed: () => _pickTime(settings.quietHoursStart, (t) async {
+                  await settings.setQuietHoursStart(t);
+                  setState(() {});
+                }),
+              ),
+            ),
+            ListTile(
+              contentPadding: const EdgeInsets.only(left: 72, right: 16),
+              title: const Text('End Time'),
+              trailing: TextButton(
+                child: Text(settings.quietHoursEnd.format(context)),
+                onPressed: () => _pickTime(settings.quietHoursEnd, (t) async {
+                  await settings.setQuietHoursEnd(t);
+                  setState(() {});
+                }),
+              ),
+            ),
+          ],
+          ListTile(
+            leading: const Icon(Icons.snooze_outlined),
+            title: const Text('Default Snooze'),
+            subtitle: Text('${settings.defaultSnoozeDuration} minutes'),
+            trailing: DropdownButton<int>(
+              value: settings.defaultSnoozeDuration,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(value: 5, child: Text('5 min')),
+                DropdownMenuItem(value: 10, child: Text('10 min')),
+                DropdownMenuItem(value: 15, child: Text('15 min')),
+                DropdownMenuItem(value: 30, child: Text('30 min')),
+                DropdownMenuItem(value: 60, child: Text('60 min')),
+              ],
+              onChanged: (val) async {
+                if (val != null) {
+                  await settings.setDefaultSnoozeDuration(val);
+                  setState(() {});
+                }
+              },
+            ),
+          ),
+          const Divider(),
+          
+          // About
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('Privacy Policy'),
@@ -46,6 +140,18 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => _showAboutDialog(context),
           ),
           const Divider(),
+          const Divider(),
+          
+          _buildSectionHeader('General'),
+          ListTile(
+            leading: const Icon(Icons.contacts_outlined),
+            title: const Text('Contacts'),
+            subtitle: const Text('Doctors & Pharmacies'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => context.go('/settings/contacts'),
+          ),
+          const Divider(),
+
           _buildSystemInfoSection(context),
           const Divider(),
           _buildDataManagementSection(context, ref),
@@ -75,6 +181,35 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.teal.shade700,
+        ),
+      ),
+    );
+  }
+
+  String _getThemeLabel(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light: return 'Light';
+      case ThemeMode.dark: return 'Dark';
+      case ThemeMode.system: return 'System default';
+    }
+  }
+
+  Future<void> _pickTime(TimeOfDay initial, Function(TimeOfDay) onPicked) async {
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked != null) {
+      await onPicked(picked);
+    }
   }
 
   Widget _buildSystemInfoSection(BuildContext context) {
@@ -160,21 +295,14 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           _buildActionRow(
             context,
-            'Export Data (JSON)',
-            '',
-            Icons.download_outlined,
-            () => exportService.exportAndShare(asJson: true),
+            'Advanced Data Management',
+            'Export database, resetting app, etc.',
+            Icons.storage_rounded,
+            () => context.go('/settings/data'),
           ),
           _buildActionRow(
             context,
-            'Export History (CSV)',
-            '',
-            Icons.table_chart_outlined,
-            () => exportService.exportAndShare(asJson: false),
-          ),
-          _buildActionRow(
-            context,
-            'Delete All Data',
+            'Danger Zone',
             'Cannot be undone',
             Icons.delete_sweep_outlined,
             () => _confirmDeleteAll(context, exportService),

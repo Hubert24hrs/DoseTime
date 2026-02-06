@@ -124,7 +124,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
 
       if (success) {
         // Also update local settings for offline access
-        await ref.read(settingsServiceProvider).setPro(true);
+        await ref.read(settingsServiceProvider).setIsPro(true);
         ref.invalidate(isProUserProvider);
 
         if (mounted) {
@@ -159,7 +159,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
     });
 
     await Future.delayed(const Duration(seconds: 1));
-    await ref.read(settingsServiceProvider).setPro(true);
+    await ref.read(settingsServiceProvider).setIsPro(true);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -180,7 +180,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
       final success = await purchaseService.restorePurchases();
 
       if (success) {
-        await ref.read(settingsServiceProvider).setPro(true);
+        await ref.read(settingsServiceProvider).setIsPro(true);
         ref.invalidate(isProUserProvider);
 
         if (mounted) {

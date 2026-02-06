@@ -37,8 +37,8 @@ class AddMedicationController extends AutoDisposeNotifier<AddMedicationState> {
       // Limit Check
       if (!settings.isPro) {
         final currentMeds = await repository.getAllMedications();
-        if (currentMeds.length >= 2) {
-          state = AddMedicationState(isLoading: false, error: 'Limit Reached (2). Upgrade to Pro!');
+        if (currentMeds.length >= 3) {
+          state = AddMedicationState(isLoading: false, error: 'Limit Reached (3). Upgrade to Pro!');
           return false;
         }
       }

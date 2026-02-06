@@ -10,10 +10,12 @@ A beautiful, reliable medication reminder app built with Flutter. Never miss a d
 
 - 📱 **Track Medications** - Add all your medications with custom schedules
 - ⏰ **Smart Reminders** - Reliable notifications, even in battery-saving mode
-- 📊 **Adherence Tracking** - View your medication history
+- 📊 **Adherence Tracking** - View your medication history with calendar view and PDF reports
 - 🌙 **Dark Mode** - Beautiful light and dark themes
 - 🔒 **Privacy First** - All data stored locally on your device
 - 💎 **Pro Features** - Unlimited medications with Pro upgrade
+- 📞 **Contacts** - Manage doctors and pharmacies directly in the app
+- ✨ **Polished UI** - Haptic feedback, accessibility support, and 3D design elements
 
 ## Screenshots
 

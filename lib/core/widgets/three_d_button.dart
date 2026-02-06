@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ThreeDButton extends StatefulWidget {
   final Widget child;
@@ -62,6 +63,7 @@ class _ThreeDButtonState extends State<ThreeDButton> with SingleTickerProviderSt
         setState(() => _isPressed = false);
         _controller.reverse();
         widget.onPressed?.call();
+        HapticFeedback.mediumImpact();
       },
       onTapCancel: () {
         setState(() => _isPressed = false);
