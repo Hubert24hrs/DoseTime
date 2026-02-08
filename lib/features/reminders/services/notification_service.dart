@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'dart:typed_data';
 import 'package:flutter_timezone/flutter_timezone.dart';
 
 import 'package:flutter/foundation.dart';
@@ -46,40 +47,68 @@ class NotificationService {
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
 
+    // Initialization settings for Android
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/launcher_icon');
 
-    const DarwinInitializationSettings initializationSettingsIOS =
+    // Initialization settings for iOS
+    final DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
+      notificationCategories: [
+        DarwinNotificationCategory(
+          'medication_reminder',
+          actions: [
+            DarwinNotificationAction.plain('take', 'Take'),
+            DarwinNotificationAction.plain('skip', 'Skip'),
+          ],
+          options: {DarwinNotificationCategoryOption.allowAnnouncement},
+        ),
+      ],
     );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
+    final InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
 
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
+      onDidReceiveNotificationResponse: _onNotificationResponse,
       onDidReceiveBackgroundNotificationResponse: _onBackgroundNotificationTapped,
     );
 
-    // Create notification channels
-    await _createNotificationChannels();
+    // Request permissions for Android 13+
+    if (Platform.isAndroid) {
+        final androidPlugin = flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>();
+        await androidPlugin?.requestNotificationsPermission();
+        await androidPlugin?.requestExactAlarmsPermission();
+    }
+
+    // Force channel recreation to reset and ensure sound/vibration
+    await _createNotificationChannels(forceReset: true);
 
     _isInitialized = true;
     debugPrint('NotificationService: Initialized successfully');
   }
 
   /// Create notification channels for Android
-  Future<void> _createNotificationChannels() async {
+  Future<void> _createNotificationChannels({bool forceReset = false}) async {
     if (!kIsWeb && Platform.isAndroid) {
       final androidPlugin = flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
+
+      if (forceReset) {
+        // Deleting and recreating the channel is often needed to override 
+        // user-disabled sound/vibration or system caches from older versions.
+        await androidPlugin?.deleteNotificationChannel('medication_reminders');
+        await androidPlugin?.deleteNotificationChannel('general'); // Also delete general channel if it exists
+      }
 
       // High priority channel for medication reminders
       await androidPlugin?.createNotificationChannel(
@@ -92,7 +121,8 @@ class NotificationService {
           enableVibration: true,
           showBadge: true,
           enableLights: true,
-          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+          vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]), 
+          audioAttributesUsage: AudioAttributesUsage.alarm,
         ),
       );
 
@@ -125,8 +155,8 @@ class NotificationService {
   }
 
   /// Handle notification tap
-  static void _onNotificationTapped(NotificationResponse response) {
-    debugPrint('Notification tapped: ${response.payload}');
+  static void _onNotificationResponse(NotificationResponse response) {
+    debugPrint('Notification clicked: ${response.actionId}, payload: ${response.payload}');
     // Navigate to medication details if needed
   }
 
@@ -224,7 +254,7 @@ class NotificationService {
               priority: Priority.high,
               playSound: true,
               enableVibration: true,
-              vibrationPattern: Int64List.fromList([0, 500, 200, 500]), // Custom vibration
+              vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
               category: AndroidNotificationCategory.alarm,
               visibility: NotificationVisibility.public,
               fullScreenIntent: true,
@@ -352,33 +382,31 @@ class NotificationService {
   }
 
   /// Show an instant notification (for testing)
-  Future<void> showInstantNotification({
-    required int id,
-    required String title,
-    required String body,
-    String? payload,
-  }) async {
+  Future<void> showTestNotification() async {
     await flutterLocalNotificationsPlugin.show(
-      id,
-      title,
-      body,
-      const NotificationDetails(
+      999,
+      'DoseTime Test',
+      'If you hear this and feel vibration, your notifications are working!',
+      NotificationDetails(
         android: AndroidNotificationDetails(
-          'general',
-          'General Notifications',
-          channelDescription: 'General app notifications',
+          'medication_reminders',
+          'Medication Reminders',
+          channelDescription: 'Testing notification alerts',
           importance: Importance.max,
           priority: Priority.high,
           playSound: true,
           enableVibration: true,
+          vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
+          fullScreenIntent: true,
+          category: AndroidNotificationCategory.alarm,
+          audioAttributesUsage: AudioAttributesUsage.alarm,
         ),
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
         ),
       ),
-      payload: payload,
     );
   }
 }

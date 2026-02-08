@@ -342,6 +342,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Icons.share_outlined,
             () => Share.share('Manage your medications better with DoseAlert! Download it on Play Store.'),
           ),
+          _buildActionRow(
+            context,
+            'Test Medication Notification',
+            'Verify your sound & vibration',
+            Icons.notifications_active_outlined,
+            () async {
+              final ns = NotificationService();
+              await ns.showTestNotification();
+              if (context.mounted) {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Test notification sent!')),
+                );
+              }
+            },
+            color: Colors.blue,
+          ),
         ],
       ),
     );

@@ -172,10 +172,24 @@ final logDoseProvider = Provider.autoDispose((ref) {
     
     // Cancel repeating notifications for this dose
     final notificationService = NotificationService();
-    // Reconstruct the base ID: (medId * 1000) + (timeIndex * 10)
-    // We need to find the index of the time in the medication's list with proper padding
-    final timeStr = '${item.scheduledTime.hour.toString().padLeft(2, '0')}:${item.scheduledTime.minute.toString().padLeft(2, '0')}';
-    final timeIndex = item.medication.times.indexOf(timeStr);
+    // Helper to normalize time strings to HH:mm (zero padded)
+    String normalize(int h, int m) => '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    
+    final targetTime = normalize(item.scheduledTime.hour, item.scheduledTime.minute);
+    
+    // We need to find the index of the time in the medication's list after normalizing both
+    int timeIndex = -1;
+    for (int i = 0; i < item.medication.times.length; i++) {
+      final parts = item.medication.times[i].split(':');
+      if (parts.length == 2) {
+        final h = int.tryParse(parts[0]) ?? 0;
+        final m = int.tryParse(parts[1]) ?? 0;
+        if (normalize(h, m) == targetTime) {
+          timeIndex = i;
+          break;
+        }
+      }
+    }
     
     if (timeIndex != -1) {
         final baseId = (item.medication.id! * 1000) + (timeIndex * 10);

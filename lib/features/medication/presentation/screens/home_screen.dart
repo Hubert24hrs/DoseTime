@@ -244,6 +244,9 @@ class _DoseCard extends ConsumerWidget {
                 Navigator.pop(context);
                 HapticFeedback.selectionClick();
                 ref.read(logDoseProvider)(item, 'skipped');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Skipped ${item.medication.name} for today')),
+                );
               },
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -261,6 +264,9 @@ class _DoseCard extends ConsumerWidget {
                 Navigator.pop(context);
                 HapticFeedback.heavyImpact();
                 ref.read(logDoseProvider)(item, 'delete');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Deleted log for ${item.medication.name}')),
+                );
               },
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
