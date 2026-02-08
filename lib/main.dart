@@ -5,6 +5,7 @@ import 'package:dose_time/core/services/secure_storage_service.dart';
 import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
+import 'package:dose_time/features/settings/presentation/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -58,15 +59,16 @@ class DoseAlertApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'DoseAlert',
       debugShowCheckedModeBanner: false,
       
-      // Theme
+      // Theme - now reactive to user settings
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       
       // Router
       routerConfig: router,

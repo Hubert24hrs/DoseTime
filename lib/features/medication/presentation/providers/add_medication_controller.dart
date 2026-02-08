@@ -43,7 +43,7 @@ class AddMedicationController extends AutoDisposeNotifier<AddMedicationState> {
         }
       }
       
-      final timesList = times.map((t) => '${t.hour}:${t.minute}').toList();
+      final timesList = times.map((t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}').toList();
 
       final medication = Medication(
         name: name,

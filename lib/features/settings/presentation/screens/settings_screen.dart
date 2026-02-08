@@ -1,6 +1,7 @@
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
+import 'package:dose_time/features/settings/presentation/providers/theme_provider.dart';
 import 'package:dose_time/core/services/data_export_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +21,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsServiceProvider);
+    final themeMode = ref.watch(themeModeProvider);
     
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -45,9 +47,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: const Text('Theme'),
-            subtitle: Text(_getThemeLabel(settings.themeMode)),
+            subtitle: Text(_getThemeLabel(themeMode)),
             trailing: DropdownButton<ThemeMode>(
-              value: settings.themeMode,
+              value: themeMode,
               underline: const SizedBox(),
               items: const [
                 DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
@@ -56,8 +58,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
               onChanged: (mode) async {
                 if (mode != null) {
-                  await settings.setThemeMode(mode);
-                  setState(() {});
+                  await ref.read(themeModeProvider.notifier).setThemeMode(mode);
                 }
               },
             ),
