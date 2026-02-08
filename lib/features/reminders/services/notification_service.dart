@@ -83,7 +83,7 @@ class NotificationService {
 
       // High priority channel for medication reminders
       await androidPlugin?.createNotificationChannel(
-        const AndroidNotificationChannel(
+        AndroidNotificationChannel(
           'medication_reminders',
           'Medication Reminders',
           description: 'Important reminders to take your medication',
@@ -91,6 +91,8 @@ class NotificationService {
           playSound: true,
           enableVibration: true,
           showBadge: true,
+          enableLights: true,
+          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
         ),
       );
 
@@ -101,6 +103,7 @@ class NotificationService {
           'General Notifications',
           description: 'General app notifications',
           importance: Importance.defaultImportance,
+          playSound: true,
         ),
       );
     }
@@ -221,21 +224,25 @@ class NotificationService {
               priority: Priority.high,
               playSound: true,
               enableVibration: true,
-              vibrationPattern: Int64List.fromList([0, 400, 200, 400]), // Sharp pattern
+              vibrationPattern: Int64List.fromList([0, 500, 200, 500]), // Custom vibration
               category: AndroidNotificationCategory.alarm,
               visibility: NotificationVisibility.public,
               fullScreenIntent: true,
               autoCancel: true,
+              audioAttributesUsage: AudioAttributesUsage.alarm,
+              styleInformation: BigTextStyleInformation(body),
               actions: [
                 const AndroidNotificationAction(
                   'take',
                   'Take',
                   showsUserInterface: true,
+                  cancelNotification: true,
                 ),
                 const AndroidNotificationAction(
                   'skip',
                   'Skip',
                   showsUserInterface: true,
+                  cancelNotification: true,
                 ),
               ],
             ),

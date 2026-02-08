@@ -47,10 +47,12 @@ final deleteMedicationProvider = Provider.autoDispose((ref) {
     final repository = ref.read(medicationRepositoryProvider);
     await repository.deleteMedication(id);
     
-    // Cancel all potential notifications for this ID (assuming max 100 per med)
+    // Cancel all potential notifications for this ID (max 10 repeats)
     final notificationService = NotificationService();
-    for (int i = 0; i < 20; i++) {
-        await notificationService.cancelNotification((id * 100) + i);
+    for (int i = 0; i < 10; i++) {
+        // Base IDs are (medId * 1000) + (timeIndex * 10)
+        // We cancel the first 10 potential time slots
+        await notificationService.cancelNotification((id * 1000) + (i * 10));
     }
 
     ref.invalidate(medicationListProvider);
@@ -75,7 +77,7 @@ final todaysScheduleProvider = FutureProvider.autoDispose<List<DoseScheduleItem>
           final minute = int.parse(parts[1]);
           final time = TimeOfDay(hour: hour, minute: minute);
 
-          final log = logs.firstWhere(
+          final log = logs.lastWhere(
             (l) => l.medicationId == med.id && 
                    l.scheduledTime.hour == hour && 
                    l.scheduledTime.minute == minute,
@@ -85,7 +87,7 @@ final todaysScheduleProvider = FutureProvider.autoDispose<List<DoseScheduleItem>
           items.add(DoseScheduleItem(
             medication: med, 
             scheduledTime: time, 
-            log: log.medicationId != -1 ? log : null
+            log: (log.medicationId != -1 && log.status != 'placeholder') ? log : null
           ));
         }
       } else if (med.frequency == 'As Needed') {
@@ -171,14 +173,17 @@ final logDoseProvider = Provider.autoDispose((ref) {
     // Cancel repeating notifications for this dose
     final notificationService = NotificationService();
     // Reconstruct the base ID: (medId * 1000) + (timeIndex * 10)
-    // We need to find the index of the time in the medication's list.
-    final timeIndex = item.medication.times.indexOf('${item.scheduledTime.hour}:${item.scheduledTime.minute}');
+    // We need to find the index of the time in the medication's list with proper padding
+    final timeStr = '${item.scheduledTime.hour.toString().padLeft(2, '0')}:${item.scheduledTime.minute.toString().padLeft(2, '0')}';
+    final timeIndex = item.medication.times.indexOf(timeStr);
+    
     if (timeIndex != -1) {
         final baseId = (item.medication.id! * 1000) + (timeIndex * 10);
         await notificationService.cancelNotification(baseId);
     }
     
     ref.invalidate(todaysScheduleProvider);
+    ref.invalidate(historyLogsProvider);
 
     // Inventory Management: Decrement stock if applicable and status is 'taken'
     if (status == 'taken' && item.medication.stockQuantity != null) {
