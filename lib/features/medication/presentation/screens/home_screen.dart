@@ -1,3 +1,4 @@
+import 'package:dose_time/core/services/streak_service.dart';
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/features/medication/domain/models/medication.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
@@ -17,6 +18,9 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Today\'s Doses'),
         centerTitle: false,
+        actions: [
+          _StreakBadge(),
+        ],
       ),
       body: scheduleAsync.when(
         data: (items) {
@@ -194,92 +198,7 @@ class _DoseCard extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Manage Dosage',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'What do you want to do with this dose of ${item.medication.name}?',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            ThreeDButton(
-              color: Colors.orange.shade400,
-              onPressed: () async {
-                Navigator.pop(context);
-                final ns = NotificationService();
-                await ns.scheduleSnoozeNotification(
-                  id: item.medication.id!,
-                  title: item.medication.name,
-                  body: item.medication.name,
-                );
-                await HapticFeedback.mediumImpact();
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Reminding you again in 10 minutes!'))
-                );
-              },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.timer_outlined, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Take Later (10 mins)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            ThreeDButton(
-              color: Colors.grey.shade500,
-              onPressed: () {
-                Navigator.pop(context);
-                HapticFeedback.selectionClick();
-                ref.read(logDoseProvider)(item, 'skipped');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Skipped ${item.medication.name} for today')),
-                );
-              },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.skip_next, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Skip for Today', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            ThreeDButton(
-              color: Colors.red.shade400,
-              onPressed: () {
-                Navigator.pop(context);
-                HapticFeedback.heavyImpact();
-                ref.read(logDoseProvider)(item, 'delete');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Deleted log for ${item.medication.name}')),
-                );
-              },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.delete_outline, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Delete Entry', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      builder: (sheetContext) => _SkipOptionsSheet(item: item, parentContext: context),
     );
   }
 
@@ -326,6 +245,351 @@ class _DoseCard extends ConsumerWidget {
             child: const Text('Close'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet for skip/snooze/delete options with proper async handling
+class _SkipOptionsSheet extends ConsumerStatefulWidget {
+  final DoseScheduleItem item;
+  final BuildContext parentContext;
+
+  const _SkipOptionsSheet({required this.item, required this.parentContext});
+
+  @override
+  ConsumerState<_SkipOptionsSheet> createState() => _SkipOptionsSheetState();
+}
+
+class _SkipOptionsSheetState extends ConsumerState<_SkipOptionsSheet> {
+  bool _isLoading = false;
+
+  Future<void> _handleAction(String action, String successMessage) async {
+    if (_isLoading) return;
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      await ref.read(logDoseProvider)(widget.item, action);
+      
+      if (!mounted) return;
+      Navigator.pop(context);
+      
+      if (widget.parentContext.mounted) {
+        ScaffoldMessenger.of(widget.parentContext).showSnackBar(
+          SnackBar(
+            content: Text(successMessage),
+            backgroundColor: action == 'delete' ? Colors.red : Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to $action dose: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasExistingLog = widget.item.log != null && widget.item.log!.id != null;
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Manage Dosage',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'What do you want to do with this dose of ${widget.item.medication.name}?',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 24),
+          
+          // Take Later button
+          ThreeDButton(
+            color: Colors.orange.shade400,
+            onPressed: _isLoading ? null : () async {
+              setState(() => _isLoading = true);
+              try {
+                final ns = NotificationService();
+                await ns.scheduleSnoozeNotification(
+                  id: widget.item.medication.id!,
+                  title: widget.item.medication.name,
+                  body: widget.item.medication.name,
+                );
+                await HapticFeedback.mediumImpact();
+                if (!mounted) return;
+                Navigator.pop(context);
+                if (widget.parentContext.mounted) {
+                  ScaffoldMessenger.of(widget.parentContext).showSnackBar(
+                    const SnackBar(
+                      content: Text('Reminding you again in 10 minutes!'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (!mounted) return;
+                setState(() => _isLoading = false);
+              }
+            },
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.timer_outlined, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text('Take Later (10 mins)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 12),
+          
+          // Skip for Today button
+          ThreeDButton(
+            color: Colors.grey.shade500,
+            onPressed: _isLoading ? null : () async {
+              await HapticFeedback.selectionClick();
+              await _handleAction('skipped', 'Skipped ${widget.item.medication.name} for today');
+            },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.skip_next, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Skip for Today', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          
+          // Delete Entry button - only shown when there's an existing log
+          if (hasExistingLog) ...[
+            const SizedBox(height: 12),
+            ThreeDButton(
+              color: Colors.red.shade400,
+              onPressed: _isLoading ? null : () async {
+                await HapticFeedback.heavyImpact();
+                await _handleAction('delete', 'Deleted log for ${widget.item.medication.name}');
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.delete_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Delete Entry', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Streak badge displayed in the app bar
+class _StreakBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final streakService = StreakService();
+    final streak = streakService.currentStreak;
+    
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showStreakDialog(context, streakService);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: streak >= 7 
+                ? [Colors.orange.shade400, Colors.red.shade400]
+                : [Colors.teal.shade400, Colors.teal.shade600],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: (streak >= 7 ? Colors.orange : Colors.teal).withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              streak >= 7 ? '🔥' : '📅',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$streak',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showStreakDialog(BuildContext context, StreakService streakService) {
+    final streak = streakService.currentStreak;
+    final longest = streakService.longestStreak;
+    final message = streakService.getMotivationalMessage();
+    final achievements = streakService.achievements;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Text(streak >= 7 ? '🔥' : '📅', style: const TextStyle(fontSize: 28)),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Your Streak')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _StatCard(
+                  icon: Icons.local_fire_department,
+                  label: 'Current',
+                  value: '$streak days',
+                  color: Colors.orange,
+                ),
+                const SizedBox(width: 12),
+                _StatCard(
+                  icon: Icons.emoji_events,
+                  label: 'Best',
+                  value: '$longest days',
+                  color: Colors.amber,
+                ),
+              ],
+            ),
+            if (achievements.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Achievements',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: achievements.map((id) {
+                  final emoji = _getAchievementEmoji(id);
+                  return Chip(
+                    label: Text(emoji),
+                    backgroundColor: Colors.amber.shade100,
+                  );
+                }).toList(),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Keep it up!'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getAchievementEmoji(String id) {
+    switch (id) {
+      case 'streak_3': return '🌱';
+      case 'streak_7': return '🔥';
+      case 'streak_14': return '⭐';
+      case 'streak_30': return '🏆';
+      case 'streak_60': return '👑';
+      case 'streak_100': return '💯';
+      case 'streak_365': return '🎉';
+      default: return '✨';
+    }
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

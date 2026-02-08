@@ -19,7 +19,7 @@ class DatabaseHelper {
     if (kIsWeb) {
       // Initialize FFI for web
       databaseFactory = databaseFactoryFfiWeb;
-      return await openDatabase(filePath, version: 5, onCreate: _createDB, onUpgrade: _onUpgrade);
+      return await openDatabase(filePath, version: 6, onCreate: _createDB, onUpgrade: _onUpgrade);
     }
     
     final dbPath = await getDatabasesPath();
@@ -27,7 +27,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -65,6 +65,27 @@ class DatabaseHelper {
       )
       ''');
     }
+    if (oldVersion < 6) {
+      // Fix NOT NULL constraint on taken_time - recreate table with correct schema
+      await db.execute('ALTER TABLE dose_logs RENAME TO dose_logs_old');
+      await db.execute('''
+      CREATE TABLE dose_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        medication_id INTEGER NOT NULL,
+        medication_name TEXT,
+        medication_color INTEGER,
+        scheduled_time TEXT NOT NULL,
+        taken_time TEXT,
+        status TEXT NOT NULL,
+        FOREIGN KEY (medication_id) REFERENCES medications (id) ON DELETE CASCADE
+      )
+      ''');
+      await db.execute('''
+      INSERT INTO dose_logs (id, medication_id, medication_name, medication_color, scheduled_time, taken_time, status)
+      SELECT id, medication_id, medication_name, medication_color, scheduled_time, taken_time, status FROM dose_logs_old
+      ''');
+      await db.execute('DROP TABLE dose_logs_old');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -100,7 +121,7 @@ class DatabaseHelper {
       medication_name TEXT,
       medication_color INTEGER,
       scheduled_time $textType,
-      taken_time $textType, -- Nullable in logic, but passing string null needs care
+      taken_time TEXT,
       status $textType,
       FOREIGN KEY (medication_id) REFERENCES medications (id) ON DELETE CASCADE
     )
