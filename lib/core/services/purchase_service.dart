@@ -6,11 +6,11 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 /// Service to handle RevenueCat in-app purchases
 class PurchaseService {
-  // TODO: Replace with your RevenueCat API key from https://app.revenuecat.com
-  static const String _apiKey = 'YOUR_REVENUECAT_PUBLIC_SDK_KEY';
+  // RevenueCat Public SDK Key from https://app.revenuecat.com
+  static const String _apiKey = 'test_nXCbgNcJQxxjLjELMuhxQlBbrQN';
   
   // Entitlement ID configured in RevenueCat dashboard
-  static const String _proEntitlementId = 'pro';
+  static const String _proEntitlementId = 'DoseAlert Pro';
 
   bool _isInitialized = false;
   final StreamController<CustomerInfo> _customerInfoController = StreamController<CustomerInfo>.broadcast();
