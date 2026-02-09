@@ -19,6 +19,13 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
   String? _selectedPlanId;
 
   @override
+  void initState() {
+    super.initState();
+    // Pre-select yearly as default (best value)
+    _selectedPlanId = 'yearly';
+  }
+
+  @override
   Widget build(BuildContext context) {
     final offeringsAsync = ref.watch(offeringsProvider);
 
@@ -40,7 +47,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
           ),
         ),
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -94,15 +101,27 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
                 _buildFeatureRow(Icons.local_fire_department, 'Streak Tracking & Badges'),
 
                 const SizedBox(height: 24),
+                
+                // Section title
+                const Text(
+                  'Choose Your Plan',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
 
                 // Subscription Plans
-                Expanded(
-                  child: offeringsAsync.when(
-                    data: (offerings) => _buildSubscriptionPlans(offerings),
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => _buildFallbackPlans(),
+                offeringsAsync.when(
+                  data: (offerings) => _buildSubscriptionPlans(offerings),
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(),
+                    ),
                   ),
+                  error: (e, _) => _buildFallbackPlans(),
                 ),
+
+                const SizedBox(height: 20),
 
                 // Error message
                 if (_error != null)
@@ -117,28 +136,30 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
 
                 // Purchase button
                 ThreeDButton(
-                  color: _selectedPlanId != null ? Colors.teal : Colors.grey,
-                  onPressed: _isLoading || _selectedPlanId == null
-                      ? null
-                      : () => _purchaseSelectedPlan(),
+                  color: Colors.teal,
+                  onPressed: _isLoading ? null : () => _purchaseSelectedPlan(),
                   child: _isLoading
                       ? const SizedBox(
                           height: 24,
                           width: 24,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text(
-                          'Continue',
-                          style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                      : Text(
+                          'Get ${_getPlanDisplayName(_selectedPlanId ?? "yearly")}',
+                          style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                 ),
                 const SizedBox(height: 12),
 
                 // Restore purchases
-                TextButton(
-                  onPressed: _isLoading ? null : _restorePurchases,
-                  child: const Text('Restore Purchases'),
+                Center(
+                  child: TextButton(
+                    onPressed: _isLoading ? null : _restorePurchases,
+                    child: const Text('Restore Purchases'),
+                  ),
                 ),
+
+                const SizedBox(height: 8),
 
                 // Terms
                 Text(
@@ -146,12 +167,20 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  String _getPlanDisplayName(String id) {
+    if (id.toLowerCase().contains('month')) return 'Monthly';
+    if (id.toLowerCase().contains('year') || id.toLowerCase().contains('annual')) return 'Yearly';
+    if (id.toLowerCase().contains('lifetime')) return 'Lifetime';
+    return 'Pro';
   }
 
   Widget _buildSubscriptionPlans(Offerings? offerings) {
@@ -170,11 +199,15 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
       return aOrder.compareTo(bOrder);
     });
 
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount: sortedPackages.length,
-      itemBuilder: (context, index) {
-        final package = sortedPackages[index];
+    // If no plan selected, select first one
+    if (_selectedPlanId == null && sortedPackages.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() => _selectedPlanId = sortedPackages[0].identifier);
+      });
+    }
+
+    return Column(
+      children: sortedPackages.map((package) {
         return _buildPlanCard(
           id: package.identifier,
           title: _getPlanTitle(package.identifier),
@@ -182,9 +215,11 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
           description: _getPlanDescription(package.identifier),
           badge: _getPlanBadge(package.identifier),
           isSelected: _selectedPlanId == package.identifier,
-          onTap: () => setState(() => _selectedPlanId = package.identifier),
+          onTap: () {
+            setState(() => _selectedPlanId = package.identifier);
+          },
         );
-      },
+      }).toList(),
     );
   }
 
@@ -229,107 +264,98 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.teal.shade50 : Colors.white,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: isSelected ? Colors.teal.shade50 : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? Colors.teal : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Radio indicator
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? Colors.teal : Colors.grey.shade400,
-                  width: 2,
-                ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected ? Colors.teal : Colors.grey.shade300,
+                width: isSelected ? 2 : 1,
               ),
-              child: isSelected
-                  ? Center(
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.teal,
-                        ),
-                      ),
-                    )
-                  : null,
             ),
-            const SizedBox(width: 16),
+            child: Row(
+              children: [
+                // Radio indicator
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.teal : Colors.grey.shade400,
+                      width: 2,
+                    ),
+                    color: isSelected ? Colors.teal : Colors.transparent,
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      : null,
+                ),
+                const SizedBox(width: 16),
 
-            // Plan details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                // Plan details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (badge != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.amber,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            badge,
+                      Row(
+                        children: [
+                          Text(
+                            title,
                             style: const TextStyle(
-                              fontSize: 10,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black,
                             ),
                           ),
-                        ),
-                      ],
+                          if (badge != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.amber,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                badge,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ),
+                ),
 
-            // Price
-            Text(
-              price,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.teal : Colors.black87,
-              ),
+                // Price
+                Text(
+                  price,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.teal : Colors.black87,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
