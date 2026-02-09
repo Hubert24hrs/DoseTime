@@ -25,6 +25,7 @@ dependencies:
   shared_preferences: ^2.2.2
   purchases_flutter: ^8.0.0
   table_calendar: ^3.1.2
+  google_mobile_ads: ^4.0.0
   
   # Security & Storage
   flutter_secure_storage: ^9.0.0

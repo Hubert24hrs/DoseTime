@@ -3,6 +3,7 @@ import 'package:dose_time/core/services/analytics_service.dart';
 import 'package:dose_time/core/services/purchase_service.dart';
 import 'package:dose_time/core/services/secure_storage_service.dart';
 import 'package:dose_time/core/services/streak_service.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
@@ -55,6 +56,9 @@ Future<void> _initializeServices() async {
   
   // Initialize streak tracking
   await StreakService().initialize();
+  
+  // Initialize Google Mobile Ads
+  await MobileAds.instance.initialize();
 }
 
 class DoseAlertApp extends ConsumerWidget {

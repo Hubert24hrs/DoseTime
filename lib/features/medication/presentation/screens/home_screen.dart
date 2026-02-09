@@ -1,18 +1,72 @@
 import 'package:dose_time/core/services/streak_service.dart';
 import 'package:dose_time/core/widgets/three_d_button.dart';
+import 'package:dose_time/core/services/ad_service.dart';
+import 'package:dose_time/core/services/purchase_service.dart';
 import 'package:dose_time/features/medication/domain/models/medication.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBannerAd();
+    _loadInterstitialAd();
+  }
+
+  void _loadInterstitialAd() async {
+    final isPro = await ref.read(isProUserProvider.future);
+    if (!isPro) {
+      ref.read(adServiceProvider).loadInterstitialAd();
+    }
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  void _loadBannerAd() async {
+    // Check pro status first
+    final isPro = await ref.read(isProUserProvider.future);
+    if (isPro) return;
+
+    _bannerAd = BannerAd(
+      adUnitId: AdService.bannerAdUnitId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isBannerAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          ad.dispose();
+          debugPrint('HomeScreen: Banner Ad failed to load - $err');
+        },
+      ),
+    )..load();
+  }
+  @override
+  Widget build(BuildContext context) {
     final scheduleAsync = ref.watch(todaysScheduleProvider);
+    final isProAsync = ref.watch(isProUserProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -22,25 +76,48 @@ class HomeScreen extends ConsumerWidget {
           _StreakBadge(),
         ],
       ),
-      body: scheduleAsync.when(
-        data: (items) {
-          if (items.isEmpty) {
-             return Center(
-              child: Text('No doses scheduled for today!', 
-                style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return _DoseCard(item: item);
+      body: Column(
+        children: [
+          Expanded(
+            child: scheduleAsync.when(
+              data: (items) {
+                if (items.isEmpty) {
+                  return Center(
+                    child: Text('No doses scheduled for today!', 
+                      style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                  );
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    return _DoseCard(item: item);
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(child: Text('Error: $err')),
+            ),
+          ),
+          
+          // Ad Banner
+          isProAsync.when(
+            data: (isPro) {
+              if (!isPro && _isBannerAdLoaded && _bannerAd != null) {
+                return Container(
+                  alignment: Alignment.center,
+                  width: _bannerAd!.size.width.toDouble(),
+                  height: _bannerAd!.size.height.toDouble(),
+                  child: AdWidget(ad: _bannerAd!),
+                );
+              }
+              return const SizedBox.shrink();
             },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ],
       ),
     );
   }
@@ -177,7 +254,15 @@ class _DoseCard extends ConsumerWidget {
                         color: color,
                         onPressed: () async {
                            await HapticFeedback.lightImpact();
-                           ref.read(logDoseProvider)(item, 'taken');
+                           final isPro = await ref.read(isProUserProvider.future);
+                           
+                           // Log the dose first
+                           await ref.read(logDoseProvider)(item, 'taken');
+                           
+                           // Show interstitial ad if not Pro
+                           if (context.mounted) {
+                             ref.read(adServiceProvider).showInterstitialAd(isPro);
+                           }
                         },
                         child: const Text('Take', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
