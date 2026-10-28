@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:typed_data';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -8,6 +9,25 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+
+/// Channel used for dose alarms. Android channels are immutable once created,
+/// so the id is versioned whenever the sound/importance changes.
+const String doseAlarmChannelId = 'dose_alarm_v2';
+const String doseAlarmChannelName = 'Dose Alarms';
+
+/// Payload helpers: reminders carry "dose|<medId>|<HH:mm>" so a tap can open
+/// the alarm screen for the right time slot.
+String doseAlarmPayload(int medicationId, String time) => 'dose|$medicationId|$time';
+
+/// Returns the HH:mm dose time encoded in a reminder payload ('test' for the
+/// test alarm), or null if the payload is not a dose alarm.
+String? doseTimeFromPayload(String? payload) {
+  if (payload == null) return null;
+  final parts = payload.split('|');
+  if (parts.length == 3 && parts[0] == 'dose') return parts[2];
+  if (payload == 'test') return 'test';
+  return null;
+}
 
 /// Enhanced notification service with proper permission handling
 /// and exact alarm support for Android 12+
@@ -20,6 +40,21 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
+  bool _launchConsumed = false;
+
+  /// Notification taps and action button presses while the app is running.
+  static final StreamController<NotificationResponse> _responses =
+      StreamController<NotificationResponse>.broadcast();
+  Stream<NotificationResponse> get responses => _responses.stream;
+
+  /// The notification that cold-started the app, if any (consumed once).
+  Future<NotificationResponse?> takeLaunchResponse() async {
+    if (kIsWeb || _launchConsumed) return null;
+    final details = await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+    if (details == null || !details.didNotificationLaunchApp) return null;
+    _launchConsumed = true;
+    return details.notificationResponse;
+  }
   String _detectedTimezone = 'Unknown';
   bool _isUtcFallback = false;
 
@@ -62,8 +97,9 @@ class NotificationService {
         DarwinNotificationCategory(
           'medication_reminder',
           actions: [
-            DarwinNotificationAction.plain('take', 'Take'),
-            DarwinNotificationAction.plain('skip', 'Skip'),
+            DarwinNotificationAction.plain('take', 'Take', options: {DarwinNotificationActionOption.foreground}),
+            DarwinNotificationAction.plain('snooze', 'Snooze', options: {DarwinNotificationActionOption.foreground}),
+            DarwinNotificationAction.plain('skip', 'Skip', options: {DarwinNotificationActionOption.foreground}),
           ],
           options: {DarwinNotificationCategoryOption.allowAnnouncement},
         ),
@@ -139,24 +175,26 @@ class NotificationService {
               AndroidFlutterLocalNotificationsPlugin>();
 
       if (forceReset) {
-        // Deleting and recreating the channel is often needed to override 
-        // user-disabled sound/vibration or system caches from older versions.
+        // Older builds used a channel without the custom beep; remove it so
+        // users only see the current alarm channel.
         await androidPlugin?.deleteNotificationChannel('medication_reminders');
-        await androidPlugin?.deleteNotificationChannel('general'); // Also delete general channel if it exists
+        await androidPlugin?.deleteNotificationChannel('general');
       }
 
-      // High priority channel for medication reminders
+      // Alarm channel: plays the looping dose beep on the alarm stream so it
+      // is audible even when media volume is muted.
       await androidPlugin?.createNotificationChannel(
         AndroidNotificationChannel(
-          'medication_reminders',
-          'Medication Reminders',
-          description: 'Important reminders to take your medication',
+          doseAlarmChannelId,
+          doseAlarmChannelName,
+          description: 'Beeping alarms when it is time to take a dose',
           importance: Importance.max,
           playSound: true,
+          sound: const RawResourceAndroidNotificationSound('dose_beep'),
           enableVibration: true,
           showBadge: true,
           enableLights: true,
-          vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]), 
+          vibrationPattern: Int64List.fromList([0, 800, 400, 800, 400, 800]),
           audioAttributesUsage: AudioAttributesUsage.alarm,
         ),
       );
@@ -192,7 +230,7 @@ class NotificationService {
   /// Handle notification tap
   static void _onNotificationResponse(NotificationResponse response) {
     debugPrint('Notification clicked: ${response.actionId}, payload: ${response.payload}');
-    // Navigate to medication details if needed
+    _responses.add(response);
   }
 
   /// Handle background notification tap
@@ -258,76 +296,88 @@ class NotificationService {
     return true;
   }
 
-  /// Schedule a daily recurring notification
+  /// Notification details for a beeping dose alarm. FLAG_INSISTENT (4) keeps
+  /// the beep looping until the user taps or dismisses the alarm.
+  NotificationDetails _alarmDetails(String body) {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        doseAlarmChannelId,
+        doseAlarmChannelName,
+        channelDescription: 'Beeping alarms when it is time to take a dose',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound('dose_beep'),
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 800, 400, 800, 400, 800]),
+        category: AndroidNotificationCategory.alarm,
+        visibility: NotificationVisibility.public,
+        fullScreenIntent: true,
+        autoCancel: true,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        additionalFlags: Int32List.fromList(<int>[4]),
+        styleInformation: BigTextStyleInformation(body),
+        actions: const [
+          AndroidNotificationAction('skip', 'Skip', showsUserInterface: true, cancelNotification: true),
+          AndroidNotificationAction('snooze', 'Snooze', showsUserInterface: true, cancelNotification: true),
+          AndroidNotificationAction('take', 'Take', showsUserInterface: true, cancelNotification: true),
+        ],
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        categoryIdentifier: 'medication_reminder',
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      ),
+    );
+  }
+
+  Future<AndroidScheduleMode> _scheduleMode() async {
+    final canUseExactAlarms = await canScheduleExactAlarms();
+    return canUseExactAlarms
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+  }
+
+  /// Schedule a daily recurring dose alarm plus follow-up reminders every
+  /// 10 minutes for an hour. When [startTomorrow] is true (the dose was
+  /// already taken/skipped today) the first alarm fires tomorrow.
   Future<void> scheduleDailyNotification({
     required int id,
     required String title,
     required String body,
     required TimeOfDay time,
     String? payload,
+    bool startTomorrow = false,
   }) async {
-    // Determine schedule mode based on permissions
-    final canUseExactAlarms = await canScheduleExactAlarms();
-    final scheduleMode = canUseExactAlarms
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
+    final scheduleMode = await _scheduleMode();
+    final details = _alarmDetails(body);
 
-    // Schedule the primary notification and 6 repeats (every 10 minutes for an hour)
-    for (int i = 0; i <= 6; i++) {
-        final scheduledTime = _nextInstanceOfTime(time).add(Duration(minutes: i * 10));
-        await flutterLocalNotificationsPlugin.zonedSchedule(
-          id + i, // Unique ID for each repeat
-          i == 0 ? title : '$title (Reminder)',
-          body,
-          scheduledTime,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              'medication_reminders',
-              'Medication Reminders',
-              channelDescription: 'Important reminders to take your medication',
-              importance: Importance.max,
-              priority: Priority.high,
-              playSound: true,
-              enableVibration: true,
-              vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
-              category: AndroidNotificationCategory.alarm,
-              visibility: NotificationVisibility.public,
-              fullScreenIntent: true,
-              autoCancel: true,
-              audioAttributesUsage: AudioAttributesUsage.alarm,
-              styleInformation: BigTextStyleInformation(body),
-              actions: [
-                const AndroidNotificationAction(
-                  'take',
-                  'Take',
-                  showsUserInterface: true,
-                  cancelNotification: true,
-                ),
-                const AndroidNotificationAction(
-                  'skip',
-                  'Skip',
-                  showsUserInterface: true,
-                  cancelNotification: true,
-                ),
-              ],
-            ),
-            iOS: const DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-              categoryIdentifier: 'medication_reminder',
-              interruptionLevel: InterruptionLevel.timeSensitive,
-            ),
-          ),
-          androidScheduleMode: scheduleMode,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.time,
-          payload: payload,
-        );
+    final now = tz.TZDateTime.now(tz.local);
+    var base = _nextInstanceOfTime(time);
+    if (startTomorrow && base.day == now.day && base.month == now.month) {
+      base = base.add(const Duration(days: 1));
     }
 
-    debugPrint('Scheduled notification $id and 5 repeats for ${time.format}');
+    // Schedule the primary alarm and 6 repeats (every 10 minutes for an hour)
+    for (int i = 0; i <= 6; i++) {
+      final scheduledTime = base.add(Duration(minutes: i * 10));
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        id + i, // Unique ID for each repeat
+        i == 0 ? title : '$title (Reminder)',
+        body,
+        scheduledTime,
+        details,
+        androidScheduleMode: scheduleMode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+        payload: payload,
+      );
+    }
+
+    debugPrint('Scheduled dose alarm $id (+6 repeats) from $base');
   }
 
   /// Calculate next instance of given time
@@ -341,14 +391,14 @@ class NotificationService {
       time.hour,
       time.minute,
     );
-    
+
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
     return scheduledDate;
   }
 
-  /// Schedule a one-time notification
+  /// Schedule a one-time beeping dose alarm
   Future<void> scheduleOneTimeNotification({
     required int id,
     required String title,
@@ -356,45 +406,44 @@ class NotificationService {
     required DateTime scheduledDateTime,
     String? payload,
   }) async {
-    final canUseExactAlarms = await canScheduleExactAlarms();
-    final scheduleMode = canUseExactAlarms
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
-
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
       title,
       body,
       tz.TZDateTime.from(scheduledDateTime, tz.local),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'medication_reminders',
-          'Medication Reminders',
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: scheduleMode,
+      _alarmDetails(body),
+      androidScheduleMode: await _scheduleMode(),
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       payload: payload,
     );
   }
 
-  /// Schedule a snooze notification (10 minutes)
+  /// Schedule a snooze alarm [minutes] from now for the given dose slot.
   Future<void> scheduleSnoozeNotification({
     required int id,
     required String title,
     required String body,
+    int minutes = 10,
+    String? payload,
   }) async {
-    final scheduledTime = DateTime.now().add(const Duration(minutes: 10));
     await scheduleOneTimeNotification(
-      id: id + 9999, // Use a high offset to avoid collision
+      id: 900000 + (id % 90000), // Separate range so it never collides with daily alarms
       title: '$title (Snoozed)',
-      body: 'Time to take your $body',
-      scheduledDateTime: scheduledTime,
-      payload: 'snooze',
+      body: body,
+      scheduledDateTime: DateTime.now().add(Duration(minutes: minutes)),
+      payload: payload ?? 'snooze',
+    );
+  }
+
+  /// Fire a test alarm after [delay] so the user can lock the phone and hear it.
+  Future<void> scheduleTestAlarm({Duration delay = const Duration(seconds: 10)}) async {
+    await scheduleOneTimeNotification(
+      id: 999,
+      title: 'DoseAlert test alarm',
+      body: 'This is how your dose reminders will beep.',
+      scheduledDateTime: DateTime.now().add(delay),
+      payload: 'test',
     );
   }
 
@@ -414,34 +463,5 @@ class NotificationService {
   /// Get list of pending notifications
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await flutterLocalNotificationsPlugin.pendingNotificationRequests();
-  }
-
-  /// Show an instant notification (for testing)
-  Future<void> showTestNotification() async {
-    await flutterLocalNotificationsPlugin.show(
-      999,
-      'DoseTime Test',
-      'If you hear this and feel vibration, your notifications are working!',
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'medication_reminders',
-          'Medication Reminders',
-          channelDescription: 'Testing notification alerts',
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
-          enableVibration: true,
-          vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
-          fullScreenIntent: true,
-          category: AndroidNotificationCategory.alarm,
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-    );
   }
 }

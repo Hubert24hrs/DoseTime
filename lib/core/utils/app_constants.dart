@@ -1,8 +1,9 @@
+import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class AppConstants {
   static const List<Color> medicationColors = [
-    Colors.teal,
+    brandBlue,
     Color(0xFFFF6F61), // Coral
     Colors.blue,
     Colors.green,

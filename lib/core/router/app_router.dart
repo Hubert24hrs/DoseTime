@@ -13,6 +13,7 @@ import 'package:dose_time/features/settings/presentation/screens/add_edit_contac
 import 'package:dose_time/features/history/presentation/screens/history_screen.dart';
 import 'package:dose_time/features/history/presentation/screens/adherence_insights_screen.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
+import 'package:dose_time/features/reminders/presentation/alarm_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,6 +129,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/alarm',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => MaterialPage(
+          fullscreenDialog: true,
+          child: AlarmScreen(time: state.uri.queryParameters['time'] ?? ''),
+        ),
       ),
       GoRoute(
         path: '/upgrade',

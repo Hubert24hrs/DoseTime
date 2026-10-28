@@ -1,3 +1,4 @@
+import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/core/services/purchase_service.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
@@ -41,7 +42,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.teal.shade50,
+              brandBlue.shade50,
               Colors.white,
             ],
           ),
@@ -136,7 +137,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
 
                 // Purchase button
                 ThreeDButton(
-                  color: Colors.teal,
+                  color: brandBlue,
                   onPressed: _isLoading ? null : () => _purchaseSelectedPlan(),
                   child: _isLoading
                       ? const SizedBox(
@@ -267,7 +268,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
-        color: isSelected ? Colors.teal.shade50 : Colors.white,
+        color: isSelected ? brandBlue.shade50 : Colors.white,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
@@ -277,7 +278,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isSelected ? Colors.teal : Colors.grey.shade300,
+                color: isSelected ? brandBlue : Colors.grey.shade300,
                 width: isSelected ? 2 : 1,
               ),
             ),
@@ -290,10 +291,10 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected ? Colors.teal : Colors.grey.shade400,
+                      color: isSelected ? brandBlue : Colors.grey.shade400,
                       width: 2,
                     ),
-                    color: isSelected ? Colors.teal : Colors.transparent,
+                    color: isSelected ? brandBlue : Colors.transparent,
                   ),
                   child: isSelected
                       ? const Icon(Icons.check, size: 16, color: Colors.white)
@@ -350,7 +351,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.teal : Colors.black87,
+                    color: isSelected ? brandBlue : Colors.black87,
                   ),
                 ),
               ],
@@ -498,10 +499,10 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: Colors.teal.shade50,
+              color: brandBlue.shade50,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: Colors.teal, size: 20),
+            child: Icon(icon, color: brandBlue, size: 20),
           ),
           const SizedBox(width: 12),
           Text(text, style: const TextStyle(fontSize: 15)),

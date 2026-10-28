@@ -1,14 +1,20 @@
 import 'package:dose_time/core/services/streak_service.dart';
-import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/core/services/ad_service.dart';
 import 'package:dose_time/core/services/purchase_service.dart';
+import 'package:dose_time/core/theme/app_theme.dart';
+import 'package:dose_time/core/widgets/pill_avatar.dart';
 import 'package:dose_time/features/medication/domain/models/medication.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
+import 'package:dose_time/features/medication/presentation/widgets/dose_wheel.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
+import 'package:dose_time/features/reminders/services/reminder_scheduler.dart';
+import 'package:dose_time/features/settings/services/settings_service.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +26,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   BannerAd? _bannerAd;
   bool _isBannerAdLoaded = false;
+  DosePeriod? _selectedPeriod;
 
   @override
   void initState() {
@@ -63,44 +70,111 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     )..load();
   }
+
+  void _shiftDay(int days) {
+    HapticFeedback.selectionClick();
+    final current = ref.read(selectedDateProvider);
+    ref.read(selectedDateProvider.notifier).state = DateTime(current.year, current.month, current.day + days);
+    setState(() => _selectedPeriod = null);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scheduleAsync = ref.watch(todaysScheduleProvider);
+    final date = ref.watch(selectedDateProvider);
+    final scheduleAsync = ref.watch(scheduleForDateProvider(date));
+    final asNeededAsync = ref.watch(asNeededMedicationsProvider);
     final isProAsync = ref.watch(isProUserProvider);
+    final isToday = DateUtils.isSameDay(date, DateTime.now());
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Today\'s Doses'),
-        centerTitle: false,
-        actions: [
-          _StreakBadge(),
-        ],
-      ),
       body: Column(
         children: [
+          _Header(onAdd: () => context.push('/medications/add')),
           Expanded(
-            child: scheduleAsync.when(
-              data: (items) {
-                if (items.isEmpty) {
-                  return Center(
-                    child: Text('No doses scheduled for today!', 
-                      style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+            child: RefreshIndicator(
+              onRefresh: () async => ref.invalidate(scheduleForDateProvider(date)),
+              child: scheduleAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Center(child: Text('Error: $err')),
+                data: (items) {
+                  final visible = _selectedPeriod == null
+                      ? items
+                      : items.where((i) => i.period == _selectedPeriod).toList();
+                  final asNeeded = asNeededAsync.valueOrNull ?? const <Medication>[];
+                  return ListView(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    children: [
+                      Container(
+                        color: Theme.of(context).colorScheme.surface,
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                        child: Column(
+                          children: [
+                            Center(
+                              child: DoseWheel(
+                                items: items,
+                                currentPeriod: isToday ? DosePeriod.of(TimeOfDay.now()) : null,
+                                selectedPeriod: _selectedPeriod,
+                                onPeriodTap: (p) {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _selectedPeriod = _selectedPeriod == p ? null : p);
+                                },
+                              ),
+                            ),
+                            _DayNavigator(
+                              date: date,
+                              onPrev: () => _shiftDay(-1),
+                              onNext: () => _shiftDay(1),
+                              onToday: isToday
+                                  ? null
+                                  : () {
+                                      final now = DateTime.now();
+                                      ref.read(selectedDateProvider.notifier).state =
+                                          DateTime(now.year, now.month, now.day);
+                                    },
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_selectedPeriod != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: InputChip(
+                              avatar: Icon(_selectedPeriod!.icon, size: 18),
+                              label: Text('Showing ${_selectedPeriod!.label}'),
+                              onDeleted: () => setState(() => _selectedPeriod = null),
+                            ),
+                          ),
+                        ),
+                      if (items.isEmpty && asNeeded.isEmpty)
+                        _EmptyState(onAdd: () => context.push('/medications/add'))
+                      else ...[
+                        for (final period in DosePeriod.values)
+                          if (visible.any((i) => i.period == period))
+                            _PeriodSection(
+                              period: period,
+                              items: visible.where((i) => i.period == period).toList(),
+                            ),
+                        if (visible.isEmpty && items.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Text(
+                              'No doses in the ${_selectedPeriod?.label.toLowerCase()}',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                          ),
+                        if (asNeeded.isNotEmpty && isToday && _selectedPeriod == null)
+                          _AsNeededSection(medications: asNeeded),
+                      ],
+                    ],
                   );
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    return _DoseCard(item: item);
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('Error: $err')),
+                },
+              ),
             ),
           ),
-          
+
           // Ad Banner
           isProAsync.when(
             data: (isPro) {
@@ -123,211 +197,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _DoseCard extends ConsumerWidget {
-  final DoseScheduleItem item;
+class _Header extends StatelessWidget {
+  final VoidCallback onAdd;
 
-  const _DoseCard({required this.item});
+  const _Header({required this.onAdd});
+
+  String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isDone = item.isTaken || item.isSkipped;
-    final color = Color(item.medication.color);
-
-    return Opacity(
-      opacity: isDone ? 0.6 : 1.0,
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 16),
-        shape: RoundedRectangleBorder(
-          side: isDone ? BorderSide.none : BorderSide(color: color.withValues(alpha: 0.5), width: 1),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        elevation: isDone ? 0 : 2,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.access_time, size: 16, color: color),
-                        const SizedBox(width: 4),
-                        Text(
-                          (item.medication.frequency == 'As Needed' && item.log == null)
-                              ? 'Whenever needed'
-                              : item.scheduledTime.format(context),
-                          style: TextStyle(
-                            color: color, 
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  if (item.isTaken)
-                    Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.greenAccent, borderRadius: BorderRadius.circular(16)), child: const Text('Taken', style: TextStyle(fontSize: 12)))
-                  else if (item.isSkipped)
-                    Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.circular(16)), child: const Text('Skipped', style: TextStyle(fontSize: 12)))
-                  else if (item.medication.stockQuantity != null && item.medication.refillThreshold != null && item.medication.stockQuantity! <= item.medication.refillThreshold!)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.orange.shade100, borderRadius: BorderRadius.circular(16)),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning_amber_rounded, size: 12, color: Colors.orange),
-                          const SizedBox(width: 4),
-                          Text('Low Stock: ${item.medication.stockQuantity!.toInt()}', style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                       HapticFeedback.selectionClick();
-                       _showMedicationInfo(context, item.medication);
-                    },
-                    child: Semantics(
-                      label: 'View details for ${item.medication.name}',
-                      button: true,
-                      child: CircleAvatar(
-                        backgroundColor: color.withValues(alpha: 0.2),
-                        radius: 24,
-                        child: Icon(
-                          item.medication.icon != null 
-                            ? IconData(item.medication.icon!, fontFamily: 'MaterialIcons') 
-                            : Icons.medication,
-                          color: color,
-                          size: 28,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.medication.name,
-                          style: TextStyle(
-                            fontSize: 18, 
-                            fontWeight: FontWeight.bold,
-                            decoration: isDone ? TextDecoration.lineThrough : null,
-                          ),
-                        ),
-                        Text(
-                          item.medication.dosage,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              if (!isDone) ...[
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ThreeDButton(
-                        color: Colors.grey[400]!,
-                        onPressed: () => _showSkipOptions(context, ref),
-                        child: const Text('Skip', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ThreeDButton(
-                        color: color,
-                        onPressed: () async {
-                           await HapticFeedback.lightImpact();
-                           final isPro = await ref.read(isProUserProvider.future);
-                           
-                           // Log the dose first
-                           await ref.read(logDoseProvider)(item, 'taken');
-                           
-                           // Show interstitial ad if not Pro
-                           if (context.mounted) {
-                             ref.read(adServiceProvider).showInterstitialAd(isPro);
-                           }
-                        },
-                        child: const Text('Take', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
+  Widget build(BuildContext context) {
+    return Container(
+      color: Theme.of(context).brightness == Brightness.dark ? AppTheme.surfaceDark : AppTheme.headerColor,
+      padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 8, 8, 12),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: Colors.white.withValues(alpha: 0.25),
+            child: const Icon(Icons.person, color: Colors.white),
           ),
-        ),
-      ),
-    );
-  }
-
-  void _showSkipOptions(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) => _SkipOptionsSheet(item: item, parentContext: context),
-    );
-  }
-
-  void _showMedicationInfo(BuildContext context, Medication medication) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              medication.icon != null 
-                ? IconData(medication.icon!, fontFamily: 'MaterialIcons') 
-                : Icons.medication,
-              color: Color(medication.color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_greeting(),
+                    style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+                Text(DateFormat('EEEE, d MMMM').format(DateTime.now()),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12)),
+              ],
             ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(medication.name)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Dosage: ${medication.dosage}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('Frequency: ${medication.frequency}'),
-            const SizedBox(height: 8),
-            Text('Scheduled Times: ${medication.times.join(", ")}'),
-            if (medication.stockQuantity != null) ...[
-              const SizedBox(height: 8),
-              Text('Current Stock: ${medication.stockQuantity!.toInt()}', 
-                style: TextStyle(
-                  color: (medication.refillThreshold != null && medication.stockQuantity! <= medication.refillThreshold!) 
-                    ? Colors.red : Colors.green,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+          ),
+          _StreakBadge(),
+          IconButton(
+            tooltip: 'Add medication',
+            onPressed: onAdd,
+            icon: const Icon(Icons.add, color: Colors.white, size: 28),
           ),
         ],
       ),
@@ -335,158 +245,458 @@ class _DoseCard extends ConsumerWidget {
   }
 }
 
-/// Bottom sheet for skip/snooze/delete options with proper async handling
-class _SkipOptionsSheet extends ConsumerStatefulWidget {
+class _DayNavigator extends StatelessWidget {
+  final DateTime date;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+  final VoidCallback? onToday;
+
+  const _DayNavigator({required this.date, required this.onPrev, required this.onNext, this.onToday});
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final diff = date.difference(today).inDays;
+    final label = switch (diff) {
+      0 => 'Today',
+      -1 => 'Yesterday',
+      1 => 'Tomorrow',
+      _ => DateFormat('EEEE').format(date),
+    };
+    return Row(
+      children: [
+        IconButton(onPressed: onPrev, icon: const Icon(Icons.chevron_left, color: AppTheme.primaryColor)),
+        Expanded(
+          child: GestureDetector(
+            onTap: onToday,
+            child: Column(
+              children: [
+                Text(
+                  '$label, ${DateFormat('MMM d').format(date)}',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                if (onToday != null)
+                  const Text('Tap to go back to today',
+                      style: TextStyle(fontSize: 11, color: AppTheme.primaryColor)),
+              ],
+            ),
+          ),
+        ),
+        IconButton(onPressed: onNext, icon: const Icon(Icons.chevron_right, color: AppTheme.primaryColor)),
+      ],
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final VoidCallback onAdd;
+
+  const _EmptyState({required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 32, 32, 16),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(color: brandBlue.shade50, shape: BoxShape.circle),
+            child: const Icon(Icons.medication_outlined, size: 36, color: AppTheme.primaryColor),
+          ),
+          const SizedBox(height: 16),
+          const Text('No meds scheduled', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Text(
+            'Add your medications and DoseAlert will beep when it\'s time to take them.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add),
+            label: const Text('Add a medication'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PeriodSection extends StatelessWidget {
+  final DosePeriod period;
+  final List<DoseScheduleItem> items;
+
+  const _PeriodSection({required this.period, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(period.icon, size: 18, color: AppTheme.primaryColor),
+              const SizedBox(width: 8),
+              Text(period.label,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, color: AppTheme.primaryColor, fontSize: 14)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                for (int i = 0; i < items.length; i++) ...[
+                  if (i > 0) const Divider(height: 1, indent: 76),
+                  _DoseRow(item: items[i]),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DoseRow extends ConsumerWidget {
+  final DoseScheduleItem item;
+
+  const _DoseRow({required this.item});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final med = item.medication;
+    final lowStock = med.stockQuantity != null &&
+        med.refillThreshold != null &&
+        med.stockQuantity! <= med.refillThreshold!;
+
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => _DoseActionSheet(item: item, parentContext: context),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Opacity(opacity: item.isDone ? 0.5 : 1, child: PillAvatar(medication: med)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    med.name,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: item.isDone ? Colors.grey : null,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${item.scheduledTime.format(context)} · ${med.dosage}',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  ),
+                  if (lowStock)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '${med.stockQuantity!.toInt()} left · refill soon',
+                        style: const TextStyle(color: AppTheme.warningColor, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            _StatusTag(item: item),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusTag extends StatelessWidget {
+  final DoseScheduleItem item;
+
+  const _StatusTag({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    if (item.isTaken) {
+      final t = item.log?.takenTime;
+      return _tag(Icons.check_circle, t != null ? 'Taken ${DateFormat.Hm().format(t)}' : 'Taken',
+          AppTheme.successColor);
+    }
+    if (item.isSkipped) return _tag(Icons.remove_circle_outline, 'Skipped', Colors.grey);
+    if (item.isMissed) return _tag(Icons.error_outline, 'Missed', AppTheme.warningColor);
+    return const Icon(Icons.chevron_right, color: Colors.grey);
+  }
+
+  Widget _tag(IconData icon, String text, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+}
+
+class _AsNeededSection extends ConsumerWidget {
+  final List<Medication> medications;
+
+  const _AsNeededSection({required this.medications});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.back_hand_outlined, size: 18, color: AppTheme.primaryColor),
+              SizedBox(width: 8),
+              Text('As needed',
+                  style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.primaryColor, fontSize: 14)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                for (final med in medications)
+                  ListTile(
+                    leading: PillAvatar(medication: med, size: 40),
+                    title: Text(med.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(med.dosage),
+                    trailing: TextButton(
+                      onPressed: () async {
+                        HapticFeedback.lightImpact();
+                        await ref.read(logAsNeededProvider)(med);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Logged a dose of ${med.name}')),
+                          );
+                        }
+                      },
+                      child: const Text('Take now'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet with the dose card: Skip / Take / Snooze, like the alarm screen.
+class _DoseActionSheet extends ConsumerStatefulWidget {
   final DoseScheduleItem item;
   final BuildContext parentContext;
 
-  const _SkipOptionsSheet({required this.item, required this.parentContext});
+  const _DoseActionSheet({required this.item, required this.parentContext});
 
   @override
-  ConsumerState<_SkipOptionsSheet> createState() => _SkipOptionsSheetState();
+  ConsumerState<_DoseActionSheet> createState() => _DoseActionSheetState();
 }
 
-class _SkipOptionsSheetState extends ConsumerState<_SkipOptionsSheet> {
+class _DoseActionSheetState extends ConsumerState<_DoseActionSheet> {
   bool _isLoading = false;
 
-  Future<void> _handleAction(String action, String successMessage) async {
+  DoseScheduleItem get item => widget.item;
+
+  Future<void> _run(Future<void> Function() action, String message) async {
     if (_isLoading) return;
-    
     setState(() => _isLoading = true);
-    
     try {
-      await ref.read(logDoseProvider)(widget.item, action);
-      
+      await action();
       if (!mounted) return;
       Navigator.pop(context);
-      
       if (widget.parentContext.mounted) {
         ScaffoldMessenger.of(widget.parentContext).showSnackBar(
-          SnackBar(
-            content: Text(successMessage),
-            backgroundColor: action == 'delete' ? Colors.red : Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
+          SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
         );
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to $action dose: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Something went wrong: $e')));
     }
+  }
+
+  Future<void> _take() async {
+    await HapticFeedback.lightImpact();
+    final isPro = await ref.read(isProUserProvider.future);
+    await _run(() => ref.read(logDoseProvider)(item, 'taken'), '${item.medication.name} marked as taken');
+    ref.read(adServiceProvider).showInterstitialAd(isPro);
+  }
+
+  Future<void> _snooze() async {
+    final minutes = ref.read(settingsServiceProvider).defaultSnoozeDuration;
+    await _run(() async {
+      await ReminderScheduler.markHandled(item.medication, item.timeKey);
+      await NotificationService().scheduleSnoozeNotification(
+        id: item.medication.id! * 1440 + item.scheduledTime.hour * 60 + item.scheduledTime.minute,
+        title: 'Time for ${item.medication.name}',
+        body: 'Take ${item.medication.dosage}',
+        minutes: minutes,
+        payload: doseAlarmPayload(item.medication.id!, item.timeKey),
+      );
+      await HapticFeedback.mediumImpact();
+    }, 'We\'ll beep again in $minutes minutes');
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasExistingLog = widget.item.log != null && widget.item.log!.id != null;
-    
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Manage Dosage',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'What do you want to do with this dose of ${widget.item.medication.name}?',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 24),
-          
-          // Take Later button
-          ThreeDButton(
-            color: Colors.orange.shade400,
-            onPressed: _isLoading ? null : () async {
-              setState(() => _isLoading = true);
-              try {
-                final ns = NotificationService();
-                await ns.scheduleSnoozeNotification(
-                  id: widget.item.medication.id!,
-                  title: widget.item.medication.name,
-                  body: widget.item.medication.name,
-                );
-                await HapticFeedback.mediumImpact();
-                if (!mounted) return;
-                Navigator.pop(context);
-                if (widget.parentContext.mounted) {
-                  ScaffoldMessenger.of(widget.parentContext).showSnackBar(
-                    const SnackBar(
-                      content: Text('Reminding you again in 10 minutes!'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (!mounted) return;
-                setState(() => _isLoading = false);
-              }
-            },
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+    final med = item.medication;
+    final now = DateTime.now();
+    final isFuture = item.date.isAfter(DateTime(now.year, now.month, now.day));
+    final isToday = DateUtils.isSameDay(item.date, now);
+    final hasLog = item.log?.id != null;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              item.scheduledTime.format(context),
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                PillAvatar(medication: med, size: 52),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.timer_outlined, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('Take Later (10 mins)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      Text(med.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      Text('Take ${med.dosage}', style: TextStyle(color: Colors.grey.shade700)),
+                      Text(
+                        'Scheduled for ${item.timeKey}, ${DateFormat('EEE d MMM').format(item.date)}',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      ),
+                      if (med.instructions != null && med.instructions!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(med.instructions!,
+                              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                        ),
                     ],
                   ),
-          ),
-          const SizedBox(height: 12),
-          
-          // Skip for Today button
-          ThreeDButton(
-            color: Colors.grey.shade500,
-            onPressed: _isLoading ? null : () async {
-              await HapticFeedback.selectionClick();
-              await _handleAction('skipped', 'Skipped ${widget.item.medication.name} for today');
-            },
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.skip_next, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Skip for Today', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
               ],
             ),
-          ),
-          
-          // Delete Entry button - only shown when there's an existing log
-          if (hasExistingLog) ...[
-            const SizedBox(height: 12),
-            ThreeDButton(
-              color: Colors.red.shade400,
-              onPressed: _isLoading ? null : () async {
-                await HapticFeedback.heavyImpact();
-                await _handleAction('delete', 'Deleted log for ${widget.item.medication.name}');
-              },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+            const SizedBox(height: 24),
+            if (_isLoading)
+              const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())
+            else if (isFuture)
+              Text('You can log this dose on the day.', style: TextStyle(color: Colors.grey.shade600))
+            else if (item.isDone)
+              Row(
                 children: [
-                  Icon(Icons.delete_outline, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Delete Entry', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _run(
+                        () => ref.read(logDoseProvider)(item, 'delete'),
+                        'Reset ${med.name} to pending',
+                      ),
+                      icon: const Icon(Icons.undo),
+                      label: Text(item.isTaken ? 'Un-take' : 'Undo skip'),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _SheetAction(
+                    icon: Icons.close,
+                    label: 'SKIP',
+                    onTap: () => _run(() => ref.read(logDoseProvider)(item, 'skipped'), 'Skipped ${med.name}'),
+                  ),
+                  _SheetAction(icon: Icons.check, label: 'TAKE', primary: true, onTap: _take),
+                  if (isToday) _SheetAction(icon: Icons.alarm, label: 'SNOOZE', onTap: _snooze),
                 ],
               ),
-            ),
+            if (hasLog && !item.isDone) ...[
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => _run(() => ref.read(logDoseProvider)(item, 'delete'), 'Deleted log'),
+                child: const Text('Delete entry'),
+              ),
+            ],
           ],
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool primary;
+  final VoidCallback onTap;
+
+  const _SheetAction({required this.icon, required this.label, required this.onTap, this.primary = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = primary ? 64.0 : 52.0;
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          children: [
+            Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: primary ? AppTheme.primaryColor : brandBlue.shade50,
+              ),
+              child: Icon(icon, color: primary ? Colors.white : AppTheme.primaryColor, size: primary ? 32 : 24),
+            ),
+            const SizedBox(height: 6),
+            Text(label,
+                style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.w600, fontSize: 12)),
+          ],
+        ),
       ),
     );
   }
@@ -505,18 +715,18 @@ class _StreakBadge extends StatelessWidget {
         _showStreakDialog(context, streakService);
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: streak >= 7 
                 ? [Colors.orange.shade400, Colors.red.shade400]
-                : [Colors.teal.shade400, Colors.teal.shade600],
+                : [Colors.white.withValues(alpha: 0.22), Colors.white.withValues(alpha: 0.22)],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: (streak >= 7 ? Colors.orange : Colors.teal).withValues(alpha: 0.3),
+              color: (streak >= 7 ? Colors.orange : Colors.transparent).withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

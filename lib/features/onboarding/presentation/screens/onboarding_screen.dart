@@ -1,3 +1,4 @@
+import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
@@ -23,7 +24,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       title: 'Never Miss a Dose',
       description:
           'Track all your medications in one place and get timely reminders.',
-      color: Colors.teal,
+      color: brandBlue,
     ),
     OnboardingPage(
       icon: Icons.notifications_active_rounded,

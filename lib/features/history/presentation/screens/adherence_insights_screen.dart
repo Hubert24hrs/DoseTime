@@ -1,3 +1,4 @@
+import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -119,7 +120,7 @@ class AdherenceInsightsScreen extends ConsumerWidget {
       rateLabel = 'Excellent!';
       rateIcon = Icons.celebration;
     } else if (adherenceRate >= 75) {
-      rateColor = Colors.teal;
+      rateColor = brandBlue;
       rateLabel = 'Good';
       rateIcon = Icons.thumb_up;
     } else if (adherenceRate >= 50) {
@@ -281,7 +282,7 @@ class AdherenceInsightsScreen extends ConsumerWidget {
               barRods: [
                 BarChartRodData(
                   toY: (stats.taken + stats.skipped).toDouble(),
-                  color: Colors.teal,
+                  color: brandBlue,
                   width: 24,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                   rodStackItems: [

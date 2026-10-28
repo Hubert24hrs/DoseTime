@@ -1,3 +1,4 @@
+import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -13,7 +14,7 @@ class ThreeDButton extends StatefulWidget {
     super.key,
     required this.child,
     this.onPressed,
-    this.color = Colors.teal,
+    this.color = brandBlue,
     this.height = 50,
     this.width = double.infinity,
     this.isFloating = false,

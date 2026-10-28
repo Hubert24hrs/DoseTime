@@ -1,0 +1,76 @@
+name: Test APK
+
+# Builds an installable release APK for redesign branches and publishes it as a
+# GitHub pre-release with a QR code pointing at the download.
+on:
+  push:
+    branches: ['redesign/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build_apk:
+    name: Build & publish test APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      # build.gradle.kts falls back to the debug keystore when key.properties
+      # is absent; CI runners don't have one, so create it.
+      - name: Create test signing key
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -v -keystore ~/.android/debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Build APK (Release)
+        run: flutter build apk --release
+
+      - name: Prepare APK and QR code
+        run: |
+          TAG="test-build-${{ github.run_number }}"
+          URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/DoseAlert-test.apk"
+          mkdir dist
+          cp build/app/outputs/flutter-apk/app-release.apk dist/DoseAlert-test.apk
+          python3 -m pip install --quiet 'qrcode[pil]'
+          python3 -c "import qrcode, sys; qrcode.make(sys.argv[1], box_size=12, border=3).save('dist/DoseAlert-test-qr.png')" "$URL"
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
+          echo "APK_URL=${URL}" >> "$GITHUB_ENV"
+
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$TAG" dist/* \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --prerelease \
+            --title "DoseAlert test build #${{ github.run_number }}" \
+            --notes "Test build of \`${{ github.ref_name }}\` (${{ github.sha }}).
+
+          Download: ${APK_URL}
+
+          Scan DoseAlert-test-qr.png on your phone to download. If an older DoseAlert is installed from the Play Store, uninstall it first (different signing key)."

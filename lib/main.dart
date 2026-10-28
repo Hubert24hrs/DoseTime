@@ -5,7 +5,11 @@ import 'package:dose_time/core/services/secure_storage_service.dart';
 import 'package:dose_time/core/services/streak_service.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:dose_time/core/theme/app_theme.dart';
+import 'package:dose_time/core/database/database_helper.dart';
+import 'package:dose_time/features/medication/data/repositories/medication_repository_impl.dart';
+import 'package:dose_time/features/reminders/presentation/alarm_coordinator.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
+import 'package:dose_time/features/reminders/services/reminder_scheduler.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
 import 'package:dose_time/features/settings/presentation/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +42,12 @@ void main() async {
     ],
     child: const DoseAlertApp(),
   ));
+
+  // Rebuild dose alarms in the background (moves older installs onto the
+  // beeping alarm channel and keeps schedules consistent).
+  ReminderScheduler.syncAll(MedicationRepositoryImpl(DatabaseHelper.instance)).catchError(
+    (Object e) => debugPrint('Failed to sync reminders: $e'),
+  );
 }
 
 /// Initialize all core services
@@ -72,6 +82,7 @@ class DoseAlertApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'DoseAlert',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: rootMessengerKey,
       
       // Theme - now reactive to user settings
       theme: AppTheme.lightTheme,
@@ -121,7 +132,7 @@ class DoseAlertApp extends ConsumerWidget {
             ),
           );
         };
-        return child ?? const SizedBox();
+        return AlarmCoordinator(child: child ?? const SizedBox());
       },
     );
   }
