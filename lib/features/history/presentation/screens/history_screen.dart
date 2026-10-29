@@ -4,6 +4,7 @@ import 'package:dose_time/features/medication/domain/models/dose_log.dart';
 import 'package:dose_time/features/medication/domain/models/medication.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
 import 'package:dose_time/features/medication/presentation/providers/repository_providers.dart';
+import 'package:dose_time/core/utils/app_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -310,7 +311,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               subtitle: Text('$dateStr\n${log.takenTime != null ? "Taken at ${DateFormat('HH:mm').format(log.takenTime!)}" : log.status.toUpperCase()}'),
               isThreeLine: true,
               trailing: med?.icon != null 
-                  ? Icon(IconData(med!.icon!, fontFamily: 'MaterialIcons'), color: displayColor.withValues(alpha: 0.5))
+                  ? Icon(AppConstants.iconFor(med!.icon), color: displayColor.withValues(alpha: 0.5))
                   : null,
             ),
           ),

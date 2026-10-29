@@ -66,6 +66,8 @@ void main() {
       );
 
       await tester.pumpAndSettle();
+      // The list grew (notification sound, test alarm); scroll down to it.
+      await tester.scrollUntilVisible(find.textContaining('Privacy'), 300);
 
       expect(find.textContaining('Privacy'), findsWidgets);
     });

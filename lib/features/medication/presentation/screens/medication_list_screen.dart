@@ -5,6 +5,7 @@ import 'package:dose_time/features/medication/presentation/providers/medication_
 import 'package:dose_time/features/medication/presentation/providers/repository_providers.dart';
 import 'package:flutter/services.dart';
 import 'package:dose_time/features/reminders/services/reminder_scheduler.dart';
+import 'package:dose_time/core/utils/app_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -297,7 +298,7 @@ class _MedicationListScreenState extends ConsumerState<MedicationListScreen> {
             child: CircleAvatar(
               backgroundColor: Color(med.color).withValues(alpha: 0.2),
               child: Icon(
-                med.icon != null ? IconData(med.icon!, fontFamily: 'MaterialIcons') : Icons.medication,
+                med.icon != null ? AppConstants.iconFor(med.icon) : Icons.medication,
                 color: Color(med.color),
               ),
             ),
@@ -419,7 +420,7 @@ class _MedicationListScreenState extends ConsumerState<MedicationListScreen> {
           children: [
             Icon(
               medication.icon != null 
-                ? IconData(medication.icon!, fontFamily: 'MaterialIcons') 
+                ? AppConstants.iconFor(medication.icon) 
                 : Icons.medication,
               color: Color(medication.color),
             ),

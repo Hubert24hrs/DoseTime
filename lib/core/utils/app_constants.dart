@@ -21,4 +21,14 @@ class AppConstants {
     Icons.water_drop, // Drops
     Icons.monitor_heart,
   ];
+
+  /// Resolves a stored icon code point to one of [medicationIcons]. Icons are
+  /// looked up rather than built with IconData(codePoint) so release builds
+  /// can tree-shake the icon font.
+  static IconData iconFor(int? codePoint, {IconData fallback = Icons.medication}) {
+    for (final icon in medicationIcons) {
+      if (icon.codePoint == codePoint) return icon;
+    }
+    return fallback;
+  }
 }

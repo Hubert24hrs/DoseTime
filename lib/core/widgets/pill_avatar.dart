@@ -1,4 +1,5 @@
 import 'package:dose_time/features/medication/domain/models/medication.dart';
+import 'package:dose_time/core/utils/app_constants.dart';
 import 'package:flutter/material.dart';
 
 /// Icon for each medication form, shared by the wizard, lists and alarm.
@@ -60,7 +61,7 @@ class PillAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = Color(medication.color);
     final IconData icon = medication.type == MedicationType.pill && medication.icon != null
-        ? IconData(medication.icon!, fontFamily: 'MaterialIcons')
+        ? AppConstants.iconFor(medication.icon)
         : medicationTypeIcon(medication.type);
     return Container(
       width: size,
