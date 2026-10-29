@@ -51,5 +51,20 @@
 	<string>We need permission to send you medication reminders.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need access to share or save reports.</string>
+	<!-- Google Sign-In: iOS OAuth client (CLIENT_ID) and its callback URL scheme
+	     (REVERSED_CLIENT_ID) from GoogleService-Info.plist. -->
+	<key>GIDClientID</key>
+	<string>957206156322-6hr652asmb6edecpr0ceumi39vddsgua.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.957206156322-6hr652asmb6edecpr0ceumi39vddsgua</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

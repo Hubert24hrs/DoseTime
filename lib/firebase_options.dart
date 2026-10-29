@@ -1,9 +1,9 @@
-// Firebase configuration for DoseAlert
-// This file should be regenerated using FlutterFire CLI for production:
-// flutterfire configure
+// Firebase configuration for DoseAlert (project: dosealert-42199).
+// Matches android/app/google-services.json and ios/Runner/GoogleService-Info.plist.
+// Regenerate with `flutterfire configure --project=dosealert-42199` if apps change.
 //
-// Temporary placeholder configuration for development.
-// Replace with actual Firebase project configuration.
+// These are public client identifiers, not secrets; access is controlled by
+// Firebase Auth settings and security rules.
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
@@ -12,7 +12,10 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'run flutterfire configure to add a web app.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -21,13 +24,6 @@ class DefaultFirebaseOptions {
         return ios;
       case TargetPlatform.macOS:
         return macos;
-      case TargetPlatform.windows:
-        return windows;
-      case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'run flutterfire configure to generate.',
-        );
       default:
         throw UnsupportedError(
           'DefaultFirebaseOptions are not supported for this platform.',
@@ -35,62 +31,25 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // TODO: Replace with your Firebase project configuration
-  // To generate these values, run:
-  // 1. Install FlutterFire CLI: dart pub global activate flutterfire_cli
-  // 2. Configure: flutterfire configure
-  //
-
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAl-MxTQGKmv9aNT00pwq8as6tevtw-l5E',
-    appId: '1:220414378908:android:92397664c595ea5583fe59',
-    messagingSenderId: '220414378908',
-    projectId: 'fast-delivery-d8d5c',
-    storageBucket: 'fast-delivery-d8d5c.firebasestorage.app',
+    apiKey: 'AIzaSyD5z09JhgyOdWz12lcK7N8k4VtQMnDE29M',
+    appId: '1:957206156322:android:961034a119823617ede67b',
+    messagingSenderId: '957206156322',
+    projectId: 'dosealert-42199',
+    storageBucket: 'dosealert-42199.firebasestorage.app',
   );
-
-  // For now, using placeholder values that will need to be replaced
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB4D2wHc1zjLzsOXfmLGjWf927el2aajAs',
-    appId: '1:220414378908:ios:a06b2bfb94849e8083fe59',
-    messagingSenderId: '220414378908',
-    projectId: 'fast-delivery-d8d5c',
-    storageBucket: 'fast-delivery-d8d5c.firebasestorage.app',
-    androidClientId: '220414378908-hd7uj2jjt6ukmqcqckds8radsle7c2cn.apps.googleusercontent.com',
-    iosClientId: '220414378908-992uqd08rgfeb9b5juid26dogpdlj4ch.apps.googleusercontent.com',
-    iosBundleId: 'com.example.doseTime',
+    apiKey: 'AIzaSyC1stWDihvZcQYCpguyHrQTrp27gdoB1Zw',
+    appId: '1:957206156322:ios:243b6d78c824cff5ede67b',
+    messagingSenderId: '957206156322',
+    projectId: 'dosealert-42199',
+    storageBucket: 'dosealert-42199.firebasestorage.app',
+    androidClientId: '957206156322-bj5u76o8kftf7em4g3v1p9kfenp1qk4a.apps.googleusercontent.com',
+    iosClientId: '957206156322-6hr652asmb6edecpr0ceumi39vddsgua.apps.googleusercontent.com',
+    iosBundleId: 'dev.hubert.dosetime',
   );
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBcXNVEQ7ikDGGpR5QrDMeW71K5RxorS5U',
-    appId: '1:220414378908:web:9b3c12f6234d343783fe59',
-    messagingSenderId: '220414378908',
-    projectId: 'fast-delivery-d8d5c',
-    authDomain: 'fast-delivery-d8d5c.firebaseapp.com',
-    storageBucket: 'fast-delivery-d8d5c.firebasestorage.app',
-    measurementId: 'G-W3T3WW8W61',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyB4D2wHc1zjLzsOXfmLGjWf927el2aajAs',
-    appId: '1:220414378908:ios:a06b2bfb94849e8083fe59',
-    messagingSenderId: '220414378908',
-    projectId: 'fast-delivery-d8d5c',
-    storageBucket: 'fast-delivery-d8d5c.firebasestorage.app',
-    androidClientId: '220414378908-hd7uj2jjt6ukmqcqckds8radsle7c2cn.apps.googleusercontent.com',
-    iosClientId: '220414378908-992uqd08rgfeb9b5juid26dogpdlj4ch.apps.googleusercontent.com',
-    iosBundleId: 'com.example.doseTime',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBcXNVEQ7ikDGGpR5QrDMeW71K5RxorS5U',
-    appId: '1:220414378908:web:d053638278d20c9883fe59',
-    messagingSenderId: '220414378908',
-    projectId: 'fast-delivery-d8d5c',
-    authDomain: 'fast-delivery-d8d5c.firebaseapp.com',
-    storageBucket: 'fast-delivery-d8d5c.firebasestorage.app',
-    measurementId: 'G-XJPCWE9VF8',
-  );
-
+  // macOS shares the iOS app registration (same bundle id).
+  static const FirebaseOptions macos = ios;
 }

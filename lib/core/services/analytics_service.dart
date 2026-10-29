@@ -61,9 +61,16 @@ class AnalyticsService {
   }) async {
     if (!_isInitialized || _analytics == null) return;
     
+    // firebase_analytics 11+ rejects null parameter values.
+    final nonNull = parameters == null
+        ? null
+        : {
+            for (final e in parameters.entries)
+              if (e.value != null) e.key: e.value!,
+          };
     await _analytics!.logEvent(
       name: name,
-      parameters: parameters,
+      parameters: nonNull,
     );
   }
 

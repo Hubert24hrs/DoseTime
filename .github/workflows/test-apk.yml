@@ -4,7 +4,7 @@ name: Test APK
 # GitHub pre-release with a QR code pointing at the download.
 on:
   push:
-    branches: ['redesign/**']
+    branches: ['redesign/**', 'feature/**']
   workflow_dispatch:
 
 permissions:
@@ -35,10 +35,19 @@ jobs:
         run: flutter pub get
 
       # build.gradle.kts falls back to the debug keystore when key.properties
-      # is absent; CI runners don't have one, so create it.
-      - name: Create test signing key
+      # is absent. Use the stable CI test key (its SHA fingerprints are
+      # registered in Firebase, so Google Sign-In works); without the secret,
+      # generate a throwaway key and Google Sign-In won't work in the build.
+      - name: Set up test signing key
+        env:
+          CI_TEST_KEYSTORE_BASE64: ${{ secrets.CI_TEST_KEYSTORE_BASE64 }}
         run: |
           mkdir -p ~/.android
+          if [ -n "$CI_TEST_KEYSTORE_BASE64" ]; then
+            echo "$CI_TEST_KEYSTORE_BASE64" | base64 --decode > ~/.android/debug.keystore
+          else
+            echo "::warning::CI_TEST_KEYSTORE_BASE64 is not set; Google Sign-In will not work in this build."
+          fi
           if [ ! -f ~/.android/debug.keystore ]; then
             keytool -genkeypair -v -keystore ~/.android/debug.keystore \
               -storepass android -alias androiddebugkey -keypass android \

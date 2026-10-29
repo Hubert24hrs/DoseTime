@@ -1,84 +1,56 @@
 {
   "project_info": {
-    "project_number": "220414378908",
-    "project_id": "fast-delivery-d8d5c",
-    "storage_bucket": "fast-delivery-d8d5c.firebasestorage.app"
+    "project_number": "957206156322",
+    "project_id": "dosealert-42199",
+    "storage_bucket": "dosealert-42199.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:220414378908:android:acad89a5aa978e4b83fe59",
-        "android_client_info": {
-          "package_name": "com.example.fast_delivery"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "220414378908-hd7uj2jjt6ukmqcqckds8radsle7c2cn.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.fast_delivery",
-            "certificate_hash": "0e0cd98f0c47984790206a003da386d799a667f3"
-          }
-        },
-        {
-          "client_id": "220414378908-dssisf0728tlvlsg54i6q77r0ifm5oc6.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAl-MxTQGKmv9aNT00pwq8as6tevtw-l5E"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "220414378908-dssisf0728tlvlsg54i6q77r0ifm5oc6.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "220414378908-2noui5p55sgil6qcpcnlbkk1u625n5vl.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.fastDelivery"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:220414378908:android:92397664c595ea5583fe59",
+        "mobilesdk_app_id": "1:957206156322:android:961034a119823617ede67b",
         "android_client_info": {
           "package_name": "dev.hubert.dosetime"
         }
       },
       "oauth_client": [
         {
-          "client_id": "220414378908-dssisf0728tlvlsg54i6q77r0ifm5oc6.apps.googleusercontent.com",
+          "client_id": "957206156322-bj5u76o8kftf7em4g3v1p9kfenp1qk4a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "dev.hubert.dosetime",
+            "certificate_hash": "0e0cd98f0c47984790206a003da386d799a667f3"
+          }
+        },
+        {
+          "client_id": "957206156322-h9fjpfnnodbsc27mev9op8d67ip2u77b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "dev.hubert.dosetime",
+            "certificate_hash": "e36e3a6fcf0252ceee35459ddab3db5648df5ff8"
+          }
+        },
+        {
+          "client_id": "957206156322-52iuvircrs52oij808as81m1p0vc186d.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAl-MxTQGKmv9aNT00pwq8as6tevtw-l5E"
+          "current_key": "AIzaSyD5z09JhgyOdWz12lcK7N8k4VtQMnDE29M"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "220414378908-dssisf0728tlvlsg54i6q77r0ifm5oc6.apps.googleusercontent.com",
+              "client_id": "957206156322-52iuvircrs52oij808as81m1p0vc186d.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "220414378908-2noui5p55sgil6qcpcnlbkk1u625n5vl.apps.googleusercontent.com",
+              "client_id": "957206156322-6hr652asmb6edecpr0ceumi39vddsgua.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.fastDelivery"
+                "bundle_id": "dev.hubert.dosetime"
               }
             }
           ]
