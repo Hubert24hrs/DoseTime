@@ -7,71 +7,47 @@ This guide covers the console steps the code can't do for you.
 Everything below works on the free **Spark** plan. Authentication (email/password,
 Google, Apple) needs no billing. Don't upgrade to Blaze for this feature.
 
-## 1. Create the DoseAlert Firebase project
+## Status (done in the Firebase Console)
 
-The app is still configured for `fast-delivery-d8d5c`, which also hosts
-`com.example.fast_delivery`. Give DoseAlert its own project:
-
-1. Go to <https://console.firebase.google.com>, then **Add project**. Name it something like `dosealert`. Keep the Spark plan.
-2. Register the apps:
-   - **Android**: package name `dev.hubert.dosetime`.
-   - **iOS**: bundle ID `dev.hubert.dosetime` (changed from the old `com.example.doseTime` placeholder).
-3. Regenerate the config files from the project root:
-
-   ```bash
-   dart pub global activate flutterfire_cli
-   flutterfire configure --project=<your-new-project-id> --platforms=android,ios --android-package-name=dev.hubert.dosetime --ios-bundle-id=dev.hubert.dosetime
-   ```
-
-   This rewrites `lib/firebase_options.dart`, `android/app/google-services.json` and
-   `firebase.json`, and adds `ios/Runner/GoogleService-Info.plist`. These files hold
-   public client configuration, not secrets. Security comes from Firebase rules and
-   Auth settings, not from hiding them.
-
-Analytics and Crashlytics move to the new project along with Auth. Until you run
-`flutterfire configure`, the app still talks to `fast-delivery-d8d5c`. Don't create
-DoseAlert accounts there.
-
-## 2. Enable sign-in providers
-
-Firebase Console, then **Authentication**, then **Sign-in method**:
-
-- **Email/Password**: enable it. Leave "Email link (passwordless)" off.
-- **Google**: enable it and set a support email.
-- **Apple**: enable it. See section 4 for the Apple values.
-
-Under **Settings**, then **User account linking**, keep **"Link accounts that use the same
-email"**. That's the default. The app expects one account per email and links a
-second provider only after the user signs in with their original method.
-
-Under **Settings**, then **Email enumeration protection**, leave it **on**. The app's
-messages never reveal whether an email is registered.
-
-## 3. Android: SHA fingerprints for Google Sign-In
-
-Google Sign-In fails with `ApiException: 10` until your signing certificates are
-registered. In Firebase Console, open **Project settings**, then the Android app,
-then **Add fingerprint**:
-
-- **Debug key** (local `flutter run`, read from `~/.android/debug.keystore` on this PC):
+- **Project:** `DoseAlert` (`dosealert-42199`), Spark plan, Google Analytics linked to
+  the default account, Gemini in Firebase off.
+- **Apps:** Android `dev.hubert.dosetime` and iOS `dev.hubert.dosetime` are registered.
+- **Config in the repo:**
+  - `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist`,
+    `lib/firebase_options.dart` and `firebase.json` all point at `dosealert-42199`.
+  - `Info.plist` has `GIDClientID` and the Google `REVERSED_CLIENT_ID` URL scheme.
+  - The old `fast-delivery-d8d5c` project is no longer used.
+- **Sign-in providers:** Email/Password, Google and Apple are enabled. Passwordless
+  email links are off, and Google's public-facing name is "DoseAlert".
+- **Debug key fingerprints:** this PC's `~/.android/debug.keystore` is registered.
   - SHA-1 `0E:0C:D9:8F:0C:47:98:47:90:20:6A:00:3D:A3:86:D7:99:A6:67:F3`
   - SHA-256 `46:DD:D2:0B:C7:67:D2:56:9B:5E:17:33:CE:F2:61:96:1F:08:3E:DA:E1:7D:C7:96:AB:69:72:87:6C:3E:7F:4B`
+
+Firebase client config (API keys, app IDs, OAuth client IDs) is public by design and ships
+inside every app. Security comes from Auth settings and security rules.
+
+## Still to do
+
+### Release and Play signing fingerprints (Android)
+
+Google Sign-In only works in builds signed by a registered key. In Firebase Console,
+open **Project settings**, then **DoseAlert Android**, then **Add fingerprint**, and add:
+
 - **Release/upload key** (the keystore in `android/key.properties`):
 
   ```bash
   keytool -list -v -keystore <path-to-your-upload-keystore.jks> -alias <your-key-alias>
   ```
 
-- **Play App Signing key**: if Google Play signs your app, copy the SHA-1/SHA-256 from
-  Play Console, then **Setup**, then **App signing**.
+- **Play App Signing key**: copy it from Play Console, then **Setup**, then **App signing**.
 
-After adding fingerprints, download `google-services.json` again, or re-run
-`flutterfire configure`.
+After adding fingerprints, download `google-services.json` again and replace
+`android/app/google-services.json`. Only the `oauth_client` list changes.
 
-The CI test APKs (`test-apk.yml`) are signed with a throwaway key generated on each
-run, so Google Sign-In won't work in those builds. Email/password will.
+The CI test APKs (`test-apk.yml`) are signed with a throwaway key generated on each run,
+so Google Sign-In won't work in them. Email/password will.
 
-## 4. Apple: Sign in with Apple (iOS only)
+### Sign in with Apple (iOS only)
 
 The Apple button only appears on iOS devices that support it. Android shows Google and
 email only.
@@ -81,9 +57,12 @@ In the Apple Developer account (<https://developer.apple.com/account>):
 1. **Identifiers**, then App IDs: register `dev.hubert.dosetime` and tick **Sign in with Apple**.
 2. **Keys**: create a key with **Sign in with Apple** enabled and download the `.p8` file
    (you can download it once). Note the **Key ID** and your **Team ID**.
-3. In Firebase Console, open **Authentication**, then **Apple**, and enter the Team ID,
-   Key ID and the `.p8` contents. They live only in the Firebase Console. Never commit
-   the `.p8` file or paste it into the app.
+3. Apple is already enabled in Firebase, which is enough for sign-in on iPhone. For
+   account deletion to revoke Apple tokens (App Store guideline 5.1.1(v)), open
+   **Authentication**, then **Sign-in method**, then **Apple**, then
+   **OAuth code flow configuration**. Enter the Team ID, Key ID and `.p8` contents
+   yourself. They live only in the Firebase Console. Never commit the `.p8` file or
+   paste it into the app.
 4. A Services ID and return URL are only needed for web or Android Apple sign-in, which
    this app doesn't use.
 
@@ -94,29 +73,7 @@ In Xcode (on a Mac), open `ios/Runner.xcworkspace`. Then, under **Runner**, open
 - Confirm the **Sign in with Apple** capability. `ios/Runner/Runner.entitlements` is
   already added and referenced.
 
-## 5. iOS: Google Sign-In URL scheme
-
-After `flutterfire configure` adds `ios/Runner/GoogleService-Info.plist`, copy its
-`REVERSED_CLIENT_ID` value into `ios/Runner/Info.plist`:
-
-```xml
-<key>CFBundleURLTypes</key>
-<array>
-  <dict>
-    <key>CFBundleTypeRole</key>
-    <string>Editor</string>
-    <key>CFBundleURLSchemes</key>
-    <array>
-      <string>com.googleusercontent.apps.XXXXXXXX</string> <!-- REVERSED_CLIENT_ID -->
-    </array>
-  </dict>
-</array>
-```
-
-This value is left out on purpose: it only exists once the iOS app is registered in your
-new project.
-
-## 6. Email templates (optional)
+### Email templates (optional)
 
 Under **Authentication**, then **Templates**, set the sender name to "DoseAlert" for the
 verification and password-reset emails. The Spark plan has a daily email quota, which
