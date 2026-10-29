@@ -1,7 +1,9 @@
 # DoseAlert: Google Play Store listing
 
 ## App name (30 characters max)
-DoseAlert: Pill Reminder
+DoseAlert: Med Schedule
+
+"DoseAlert" alone is taken on Google Play ("DoseAlert: Med Reminder" by Moose Media, "DoseAlert AI" and "DoseAlert" by Domobile).
 
 ## Short description (80 characters max)
 Medication reminders that ring at dose time. Track every pill, never miss a dose.
@@ -74,9 +76,9 @@ countries and charges local currency there (for example ₦ in Nigeria).
 
 | Product | Type | Suggested product ID | Suggested price |
 |---|---|---|---|
-| DoseAlert Pro Monthly | Subscription (auto-renew, 1 month) | `dosealert_pro_monthly` | $2.99 |
-| DoseAlert Pro Yearly | Subscription (auto-renew, 1 year) | `dosealert_pro_yearly` | $24.99 |
-| DoseAlert Pro Lifetime | One-time product | `dosealert_pro_lifetime` | $49.99 |
+| DoseAlert Pro Monthly | Subscription (auto-renew, 1 month), base plan `monthly` | `dosealert_pro_monthly` | $2.99 ✅ active |
+| DoseAlert Pro Yearly | Subscription (auto-renew, 1 year), base plan `yearly` | `dosealert_pro_yearly` | $24.99 ✅ active |
+| DoseAlert Pro Lifetime | One-time product, purchase option `lifetime` | `dosealert_pro_lifetime` | $49.99 ✅ active |
 
 ## Languages
 English

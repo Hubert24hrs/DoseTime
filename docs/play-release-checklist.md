@@ -20,7 +20,7 @@ This release: **2.0.0 (10)**.
 
 ## You need to do these (they need your accounts, money or secrets)
 
-### 1. Merchant account and bank payout (required to sell Pro)
+### 1. ✅ Merchant account and bank payout (done)
 Play Console → **Setup → Payments profile** (or Monetize with Play → Set up a merchant
 account):
 - Create the payments profile with your legal name and address, and add your
@@ -30,7 +30,7 @@ account):
 - Payouts are in the currency of your bank account. Check Google's list of supported
   merchant countries and payout currencies when you add the account.
 
-### 2. Create the Pro products (USD prices)
+### 2. ✅ Create the Pro products (done, all three active)
 After the merchant account is active, open Play Console → **Monetize with Play →
 Products**:
 
@@ -101,8 +101,7 @@ least 14 days** before you can apply for production. Currently 0 testers have op
 3. Keep it running for 14 days, then click **Apply for production**.
 
 ### 7. Store listing and app content
-- Main store listing: use `docs/store_listing.md`. The app name in Play is currently
-  "Dose Tracker"; change it to "DoseAlert: Pill Reminder" if you like.
+- ✅ Main store listing: name "DoseAlert: Med Schedule" and new description are saved as a draft. They go to review with the next release.
 - App content: privacy policy URL `https://hubert24hrs.github.io/DoseTime/`, Data
   Safety from `docs/data_safety.md`, account deletion URL
   `https://hubert24hrs.github.io/DoseTime/delete-account.html`, ads = No, target
