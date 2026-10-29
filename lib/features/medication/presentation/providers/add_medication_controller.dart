@@ -1,7 +1,9 @@
 import 'package:dose_time/features/medication/domain/models/medication.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
 import 'package:dose_time/features/medication/presentation/providers/repository_providers.dart';
+import 'package:dose_time/features/medication/domain/models/medication.dart' show MedicationType;
 import 'package:dose_time/features/reminders/services/notification_service.dart';
+import 'package:dose_time/features/reminders/services/reminder_scheduler.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +30,8 @@ class AddMedicationController extends AutoDisposeNotifier<AddMedicationState> {
     IconData? icon,
     double? stockQuantity,
     double? refillThreshold,
+    MedicationType type = MedicationType.pill,
+    String? instructions,
   }) async {
     state = AddMedicationState(isLoading: true);
     try {
@@ -54,31 +58,22 @@ class AddMedicationController extends AutoDisposeNotifier<AddMedicationState> {
         icon: icon?.codePoint,
         stockQuantity: stockQuantity,
         refillThreshold: refillThreshold,
+        type: type,
+        instructions: instructions,
+        startDate: DateTime.now(),
       );
 
       final savedMed = await repository.createMedication(medication);
 
-      // Schedule Notifications
-      final notificationService = NotificationService();
-      if (savedMed.frequency == 'Daily') {
-        for (int i = 0; i < times.length; i++) {
-          final time = times[i];
-          // Unique ID: medId * 1000 + index * 10
-          final notificationId = (savedMed.id! * 1000) + (i * 10);
-          await notificationService.scheduleDailyNotification(
-            id: notificationId,
-            title: 'Time for ${savedMed.name}',
-            body: 'Take ${savedMed.dosage}',
-            time: time,
-          );
-        }
-      }
+      // Schedule beeping dose alarms
+      await ReminderScheduler.scheduleMedication(savedMed);
 
       ref.invalidate(medicationListProvider);
       ref.invalidate(todaysScheduleProvider);
-      
+      ref.invalidate(scheduleForDateProvider);
+
       // Ensure permissions are granted before returning
-      await notificationService.requestPermissions();
+      await NotificationService().requestPermissions();
       
       state = AddMedicationState(isLoading: false);
       return true;

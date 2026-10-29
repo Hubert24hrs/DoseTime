@@ -1,8 +1,10 @@
+import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/features/medication/domain/models/medication.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
 import 'package:dose_time/features/medication/presentation/providers/repository_providers.dart';
 import 'package:flutter/services.dart';
+import 'package:dose_time/features/reminders/services/reminder_scheduler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -341,7 +343,7 @@ class _MedicationListScreenState extends ConsumerState<MedicationListScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                icon: const Icon(Icons.edit_outlined, color: Colors.teal),
+                icon: const Icon(Icons.edit_outlined, color: brandBlue),
                 onPressed: () => context.go('/medications/edit/${med.id}'),
                 tooltip: 'Edit',
               ),
@@ -391,8 +393,10 @@ class _MedicationListScreenState extends ConsumerState<MedicationListScreen> {
     final repository = ref.read(medicationRepositoryProvider);
     final updatedMed = med.copyWith(isArchived: !med.isArchived);
     await repository.updateMedication(updatedMed);
+    await ReminderScheduler.rescheduleMedication(updatedMed, repository);
     ref.invalidate(medicationListProvider);
     ref.invalidate(todaysScheduleProvider);
+    ref.invalidate(scheduleForDateProvider);
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

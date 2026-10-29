@@ -1,3 +1,4 @@
+import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -83,7 +84,7 @@ class HelpScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  const Icon(Icons.support_agent, size: 48, color: Colors.teal),
+                  const Icon(Icons.support_agent, size: 48, color: brandBlue),
                   const SizedBox(height: 12),
                   const Text(
                     'Still need help?',
@@ -125,7 +126,7 @@ class HelpScreen extends StatelessWidget {
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.teal,
+            color: brandBlue,
           ),
         ),
         const SizedBox(height: 12),

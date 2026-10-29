@@ -1,25 +1,61 @@
 import 'package:dose_time/features/medication/domain/models/dose_log.dart';
 import 'package:dose_time/features/medication/domain/models/medication.dart';
+import 'package:dose_time/features/medication/domain/repositories/medication_repository.dart';
 import 'package:dose_time/features/medication/presentation/providers/repository_providers.dart';
-import 'package:dose_time/features/reminders/services/notification_service.dart';
+import 'package:dose_time/features/reminders/services/reminder_scheduler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Part of the day a dose falls in; drives the home screen wheel quadrants.
+enum DosePeriod {
+  morning('Morning', Icons.wb_twilight),
+  afternoon('Afternoon', Icons.wb_sunny_outlined),
+  evening('Evening', Icons.wb_cloudy_outlined),
+  night('Night', Icons.nightlight_outlined);
+
+  const DosePeriod(this.label, this.icon);
+  final String label;
+  final IconData icon;
+
+  static DosePeriod of(TimeOfDay t) {
+    final h = t.hour;
+    if (h >= 5 && h < 12) return DosePeriod.morning;
+    if (h >= 12 && h < 17) return DosePeriod.afternoon;
+    if (h >= 17 && h < 21) return DosePeriod.evening;
+    return DosePeriod.night;
+  }
+}
 
 // Helper model for UI
 class DoseScheduleItem {
   final Medication medication;
   final TimeOfDay scheduledTime;
+  final DateTime date;
   final DoseLog? log; // If null, status is 'pending'
 
   DoseScheduleItem({
     required this.medication,
     required this.scheduledTime,
+    DateTime? date,
     this.log,
-  });
+  }) : date = date ?? DateTime.now();
 
   String get status => log?.status ?? 'pending';
   bool get isTaken => status == 'taken';
   bool get isSkipped => status == 'skipped';
+  bool get isDone => isTaken || isSkipped;
+  bool get isAsNeeded => medication.frequency == 'As Needed';
+  DosePeriod get period => DosePeriod.of(scheduledTime);
+
+  String get timeKey =>
+      '${scheduledTime.hour.toString().padLeft(2, '0')}:${scheduledTime.minute.toString().padLeft(2, '0')}';
+
+  DateTime get scheduledDateTime => DateTime(
+      date.year, date.month, date.day, scheduledTime.hour, scheduledTime.minute);
+
+  /// Pending dose whose time has passed by more than an hour.
+  bool get isMissed =>
+      !isDone && !isAsNeeded && DateTime.now().difference(scheduledDateTime).inMinutes > 60;
 }
 
 final medicationListProvider = FutureProvider.autoDispose<List<Medication>>((ref) async {
@@ -29,16 +65,6 @@ final medicationListProvider = FutureProvider.autoDispose<List<Medication>>((ref
 
 final historyLogsProvider = FutureProvider.autoDispose<List<DoseLog>>((ref) async {
   final repository = ref.watch(medicationRepositoryProvider);
-  // Get last 30 days logs? Or all. MVP all.
-  // We need a method in repo for "All Logs". I only have "getLogsForDate".
-  // Let's add "getAllLogs" to repo or just iterate days? Be pragmatic.
-  // Add getAllLogs to repo if feasible, or just show today's history in rudimentary way.
-  // Let's stick to "getLogsForDate" for today in Home.
-  // For HistoryScreen, we want a list.
-  // I will cheat and add getAllLogs to repo implementation quickly? 
-  // Or just mock it for now to save complexity?
-  // Let's assume getAllLogs exists or add it.
-  // I'll add 'getAllLogs' to repository.
   return repository.getAllLogs();
 });
 
@@ -46,108 +72,107 @@ final deleteMedicationProvider = Provider.autoDispose((ref) {
   return (int id) async {
     final repository = ref.read(medicationRepositoryProvider);
     await repository.deleteMedication(id);
-    
-    // Cancel all potential notifications for this ID (max 10 repeats)
-    final notificationService = NotificationService();
-    for (int i = 0; i < 10; i++) {
-        // Base IDs are (medId * 1000) + (timeIndex * 10)
-        // We cancel the first 10 potential time slots
-        await notificationService.cancelNotification((id * 1000) + (i * 10));
-    }
+    await ReminderScheduler.cancelForMedication(id);
 
     ref.invalidate(medicationListProvider);
     ref.invalidate(todaysScheduleProvider);
+    ref.invalidate(scheduleForDateProvider);
   };
+});
+
+/// Day shown on the home screen (defaults to today).
+final selectedDateProvider = StateProvider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+});
+
+Future<List<DoseScheduleItem>> buildScheduleForDate(
+  MedicationRepository repository,
+  DateTime date,
+) async {
+  final medications = await repository.getAllMedications();
+  final logs = await repository.getLogsForDate(date);
+  final day = DateTime(date.year, date.month, date.day);
+  final items = <DoseScheduleItem>[];
+
+  for (final med in medications) {
+    if (med.isArchived) continue;
+    if (med.startDate != null && day.isBefore(DateTime(med.startDate!.year, med.startDate!.month, med.startDate!.day))) {
+      continue;
+    }
+    if (med.endDate != null && day.isAfter(med.endDate!)) continue;
+
+    if (med.frequency == 'Daily') {
+      for (final timeStr in med.times) {
+        final time = ReminderScheduler.parseTime(timeStr);
+        DoseLog? log;
+        for (final l in logs) {
+          if (l.medicationId == med.id &&
+              l.scheduledTime.hour == time.hour &&
+              l.scheduledTime.minute == time.minute) {
+            log = l;
+          }
+        }
+        items.add(DoseScheduleItem(medication: med, scheduledTime: time, date: day, log: log));
+      }
+    } else if (med.frequency == 'As Needed') {
+      for (final log in logs.where((l) => l.medicationId == med.id)) {
+        items.add(DoseScheduleItem(
+          medication: med,
+          scheduledTime: TimeOfDay.fromDateTime(log.takenTime ?? log.scheduledTime),
+          date: day,
+          log: log,
+        ));
+      }
+    }
+  }
+
+  items.sort((a, b) {
+    final aMin = a.scheduledTime.hour * 60 + a.scheduledTime.minute;
+    final bMin = b.scheduledTime.hour * 60 + b.scheduledTime.minute;
+    return aMin.compareTo(bMin);
+  });
+  return items;
+}
+
+final scheduleForDateProvider =
+    FutureProvider.autoDispose.family<List<DoseScheduleItem>, DateTime>((ref, date) async {
+  final repository = ref.watch(medicationRepositoryProvider);
+  return buildScheduleForDate(repository, date);
 });
 
 final todaysScheduleProvider = FutureProvider.autoDispose<List<DoseScheduleItem>>((ref) async {
   final repository = ref.watch(medicationRepositoryProvider);
-  final medications = await repository.getAllMedications();
-  final today = DateTime.now();
-  final logs = await repository.getLogsForDate(today);
+  return buildScheduleForDate(repository, DateTime.now());
+});
 
-  final List<DoseScheduleItem> items = [];
-
-    // Unified logic for all medication frequencies
-    for (final med in medications) {
-      if (med.frequency == 'Daily') {
-        for (final timeStr in med.times) {
-          final parts = timeStr.split(':');
-          final hour = int.parse(parts[0]);
-          final minute = int.parse(parts[1]);
-          final time = TimeOfDay(hour: hour, minute: minute);
-
-          final log = logs.lastWhere(
-            (l) => l.medicationId == med.id && 
-                   l.scheduledTime.hour == hour && 
-                   l.scheduledTime.minute == minute,
-            orElse: () => DoseLog(medicationId: -1, scheduledTime: DateTime(0), status: 'placeholder'),
-          );
-          
-          items.add(DoseScheduleItem(
-            medication: med, 
-            scheduledTime: time, 
-            log: (log.medicationId != -1 && log.status != 'placeholder') ? log : null
-          ));
-        }
-      } else if (med.frequency == 'As Needed') {
-        final medLogs = logs.where((l) => l.medicationId == med.id).toList();
-        
-        if (medLogs.isEmpty) {
-          items.add(DoseScheduleItem(
-            medication: med,
-            scheduledTime: const TimeOfDay(hour: 0, minute: 0), // Use 0:00 for PRN
-            log: null,
-          ));
-        } else {
-          for (final log in medLogs) {
-            items.add(DoseScheduleItem(
-              medication: med,
-              scheduledTime: TimeOfDay.fromDateTime(log.takenTime ?? log.scheduledTime),
-              log: log,
-            ));
-          }
-          // Add one prompt to take it again
-          items.add(DoseScheduleItem(
-            medication: med,
-            scheduledTime: const TimeOfDay(hour: 0, minute: 0),
-            log: null,
-          ));
-        }
-      }
-    }
-
-    // Sort by time
-    items.sort((a, b) {
-      final aMin = a.scheduledTime.hour * 60 + a.scheduledTime.minute;
-      final bMin = b.scheduledTime.hour * 60 + b.scheduledTime.minute;
-      return aMin.compareTo(bMin);
-    });
-
-  return items;
+/// As-needed medications (shown as "Take now" shortcuts on the home screen).
+final asNeededMedicationsProvider = FutureProvider.autoDispose<List<Medication>>((ref) async {
+  final meds = await ref.watch(medicationListProvider.future);
+  return meds.where((m) => m.frequency == 'As Needed' && !m.isArchived).toList();
 });
 
 final logDoseProvider = Provider.autoDispose((ref) {
   return (DoseScheduleItem item, String status) async {
     final repository = ref.read(medicationRepositoryProvider);
     final now = DateTime.now();
-    
-    // Construct exact scheduled time for today
-    final scheduleDate = DateTime(
-      now.year, now.month, now.day, 
-      item.scheduledTime.hour, item.scheduledTime.minute
-    );
+    final scheduleDate = item.scheduledDateTime;
+
+    void refresh() {
+      ref.invalidate(todaysScheduleProvider);
+      ref.invalidate(scheduleForDateProvider);
+      ref.invalidate(historyLogsProvider);
+    }
 
     if (status == 'delete') {
       if (item.log != null && item.log!.id != null) {
         await repository.deleteLog(item.log!.id!);
       }
-      ref.invalidate(todaysScheduleProvider);
+      refresh();
       return;
     }
 
     if (item.log == null) {
-      // Create new log
       await repository.logDose(DoseLog(
         medicationId: item.medication.id!,
         medicationName: item.medication.name,
@@ -157,58 +182,45 @@ final logDoseProvider = Provider.autoDispose((ref) {
         status: status,
       ));
     } else {
-      // Update existing log
       await repository.updateLogStatus(
-        item.log!.id!, 
-        status, 
-        status == 'taken' ? now : null
+        item.log!.id!,
+        status,
+        status == 'taken' ? now : null,
       );
-      
-      // If updating, we might want to also ensure name/color are there if they weren't before
-      // (for legacy logs during migration)
-      // But repo.updateLogStatus only takes status and time. 
-      // Let's add a more generic updateLog to repo later if needed.
     }
-    
-    // Cancel repeating notifications for this dose
-    final notificationService = NotificationService();
-    // Helper to normalize time strings to HH:mm (zero padded)
-    String normalize(int h, int m) => '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-    
-    final targetTime = normalize(item.scheduledTime.hour, item.scheduledTime.minute);
-    
-    // We need to find the index of the time in the medication's list after normalizing both
-    int timeIndex = -1;
-    for (int i = 0; i < item.medication.times.length; i++) {
-      final parts = item.medication.times[i].split(':');
-      if (parts.length == 2) {
-        final h = int.tryParse(parts[0]) ?? 0;
-        final m = int.tryParse(parts[1]) ?? 0;
-        if (normalize(h, m) == targetTime) {
-          timeIndex = i;
-          break;
-        }
-      }
+
+    // Silence the rest of today's alarms for this dose; tomorrow's stay.
+    final isToday = DateUtils.isSameDay(item.date, now);
+    if (isToday && !item.isAsNeeded) {
+      await ReminderScheduler.markHandled(item.medication, item.timeKey);
     }
-    
-    if (timeIndex != -1) {
-        final baseId = (item.medication.id! * 1000) + (timeIndex * 10);
-        await notificationService.cancelNotification(baseId);
-    }
-    
-    ref.invalidate(todaysScheduleProvider);
-    ref.invalidate(historyLogsProvider);
+
+    refresh();
 
     // Inventory Management: Decrement stock if applicable and status is 'taken'
     if (status == 'taken' && item.medication.stockQuantity != null) {
       final currentStock = item.medication.stockQuantity!;
       if (currentStock > 0) {
-        final updatedMed = item.medication.copyWith(
-          stockQuantity: currentStock - 1,
+        await repository.updateMedication(
+          item.medication.copyWith(stockQuantity: currentStock - 1),
         );
-        await repository.updateMedication(updatedMed);
         ref.invalidate(medicationListProvider);
       }
     }
+  };
+});
+
+/// Log an as-needed dose taken right now.
+final logAsNeededProvider = Provider.autoDispose((ref) {
+  return (Medication med) async {
+    final now = DateTime.now();
+    await ref.read(logDoseProvider)(
+      DoseScheduleItem(
+        medication: med,
+        scheduledTime: TimeOfDay.fromDateTime(now),
+        date: now,
+      ),
+      'taken',
+    );
   };
 });

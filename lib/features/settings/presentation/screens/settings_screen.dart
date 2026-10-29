@@ -1,8 +1,10 @@
+import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
 import 'package:dose_time/features/settings/presentation/providers/theme_provider.dart';
 import 'package:dose_time/core/services/data_export_service.dart';
+import 'package:dose_time/features/reminders/services/alarm_tones.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -67,6 +69,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           
           // Notification Settings Section
           _buildSectionHeader('Notifications'),
+          ListTile(
+            leading: const Icon(Icons.music_note_outlined),
+            title: const Text('Notification sound'),
+            subtitle: Text(alarmToneById(settings.alarmSound).name),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              await context.push('/settings/sound');
+              if (mounted) setState(() {});
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.notifications_active_outlined),
+            title: const Text('Test dose alarm'),
+            subtitle: const Text('Beeps in 10 seconds — lock your phone to try it'),
+            trailing: const Icon(Icons.play_circle_outline),
+            onTap: () async {
+              final ns = NotificationService();
+              await ns.requestPermissions();
+              await ns.scheduleTestAlarm();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Test alarm set — it will beep in 10 seconds')),
+              );
+            },
+          ),
           SwitchListTile(
             secondary: const Icon(Icons.do_not_disturb_on_outlined),
             title: const Text('Quiet Hours'),
@@ -192,7 +219,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: Colors.teal.shade700,
+          color: brandBlue.shade700,
         ),
       ),
     );
@@ -226,7 +253,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Text(
             'System Info',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Colors.teal,
+                  color: brandBlue,
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -289,7 +316,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Text(
             'Data Management',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Colors.teal,
+                  color: brandBlue,
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -323,7 +350,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Text(
             'Support & Feedback',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Colors.teal,
+                  color: brandBlue,
                   fontWeight: FontWeight.bold,
                 ),
           ),

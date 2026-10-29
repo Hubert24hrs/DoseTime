@@ -1,0 +1,57 @@
+name: Verify alarm beep
+
+# Boots an Android emulator, fires a dose alarm and checks from the outside
+# (dumpsys notification / audio) that the app actually beeps.
+on:
+  push:
+    branches: ['redesign/**']
+  workflow_dispatch:
+
+jobs:
+  verify_beep:
+    name: Beep on emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run beep test on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          # Audio left enabled (no -noaudio) so playback is registered.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
+          script: bash .github/scripts/verify_beep.sh
+
+      - name: Upload beep report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beep-report
+          path: beep-report/

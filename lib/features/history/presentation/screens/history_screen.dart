@@ -1,3 +1,4 @@
+import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/core/services/pdf_export_service.dart';
 import 'package:dose_time/features/medication/domain/models/dose_log.dart';
 import 'package:dose_time/features/medication/domain/models/medication.dart';
@@ -175,15 +176,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       },
       calendarStyle: CalendarStyle(
         markerDecoration: const BoxDecoration(
-          color: Colors.teal,
+          color: brandBlue,
           shape: BoxShape.circle,
         ),
         todayDecoration: BoxDecoration(
-          color: Colors.teal.withValues(alpha: 0.5),
+          color: brandBlue.withValues(alpha: 0.5),
           shape: BoxShape.circle,
         ),
         selectedDecoration: const BoxDecoration(
-          color: Colors.teal,
+          color: brandBlue,
           shape: BoxShape.circle,
         ),
       ),

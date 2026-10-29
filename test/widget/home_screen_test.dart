@@ -45,7 +45,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          todaysScheduleProvider.overrideWith((ref) => Future.value([testItem])),
+          scheduleForDateProvider.overrideWith((ref, date) => Future.value([testItem])),
+          asNeededMedicationsProvider.overrideWith((ref) => Future.value(<Medication>[])),
         ],
         child: const MaterialApp(
           home: HomeScreen(),
@@ -56,7 +57,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Aspirin'), findsOneWidget);
-    expect(find.text('100mg'), findsOneWidget);
-    expect(find.text('Take'), findsOneWidget);
+    expect(find.textContaining('100mg'), findsOneWidget);
+    expect(find.text('Morning'), findsWidgets);
   });
 }

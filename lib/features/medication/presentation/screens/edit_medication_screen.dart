@@ -1,9 +1,10 @@
+import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/core/utils/app_constants.dart';
 import 'package:dose_time/features/medication/domain/models/medication.dart';
 import 'package:dose_time/features/medication/presentation/providers/medication_providers.dart';
 import 'package:dose_time/features/medication/presentation/providers/repository_providers.dart';
-import 'package:dose_time/features/reminders/services/notification_service.dart';
+import 'package:dose_time/features/reminders/services/reminder_scheduler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -144,14 +145,6 @@ class _EditMedicationScreenState extends ConsumerState<EditMedicationScreen> {
 
     try {
       final repository = ref.read(medicationRepositoryProvider);
-      final notificationService = NotificationService();
-      
-      // Cancel existing notifications
-      final medId = widget.medicationId;
-      for (int i = 0; i < 20; i++) {
-        await notificationService.cancelNotification((medId * 1000) + (i * 10));
-      }
-
       // Build updated medication
       final updatedMedication = Medication(
         id: widget.medicationId,
@@ -173,22 +166,13 @@ class _EditMedicationScreenState extends ConsumerState<EditMedicationScreen> {
 
       await repository.updateMedication(updatedMedication);
 
-      // Schedule new notifications for daily medications
-      if (_frequency == 'Daily') {
-        for (int i = 0; i < _times.length; i++) {
-          final time = _times[i];
-          await notificationService.scheduleDailyNotification(
-            id: (medId * 1000) + (i * 10),
-            title: 'Time for ${_nameController.text}',
-            body: 'Take ${_dosageController.text}',
-            time: time,
-          );
-        }
-      }
+      // Re-create beeping dose alarms with the new schedule
+      await ReminderScheduler.rescheduleMedication(updatedMedication, repository);
 
       // Invalidate providers
       ref.invalidate(medicationListProvider);
       ref.invalidate(todaysScheduleProvider);
+      ref.invalidate(scheduleForDateProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -342,7 +326,7 @@ class _EditMedicationScreenState extends ConsumerState<EditMedicationScreen> {
                   children: [
                     const Text('Reminder Times', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     IconButton(
-                      icon: const Icon(Icons.add_circle, color: Colors.teal),
+                      icon: const Icon(Icons.add_circle, color: brandBlue),
                       onPressed: () {
                         setState(() {
                           _times.add(const TimeOfDay(hour: 8, minute: 0));
@@ -363,7 +347,7 @@ class _EditMedicationScreenState extends ConsumerState<EditMedicationScreen> {
                             height: 40,
                             color: Colors.white,
                             onPressed: () => _selectTime(index),
-                            child: Text(time.format(context), style: const TextStyle(color: Colors.teal)),
+                            child: Text(time.format(context), style: const TextStyle(color: brandBlue)),
                           ),
                         ),
                         if (_times.length > 1)
@@ -418,7 +402,7 @@ class _EditMedicationScreenState extends ConsumerState<EditMedicationScreen> {
                           color: _selectedIcon == icon ? Colors.grey.shade200 : null,
                           borderRadius: BorderRadius.circular(8),
                           border: _selectedIcon == icon
-                              ? Border.all(color: Colors.teal, width: 2)
+                              ? Border.all(color: brandBlue, width: 2)
                               : null,
                         ),
                         child: Icon(icon, size: 32, color: Colors.grey.shade800),
