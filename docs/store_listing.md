@@ -1,85 +1,82 @@
-# DoseTime - Google Play Store Listing
+# DoseAlert: Google Play Store listing
 
-## App Name
-**DoseTime** - Medication Reminder
+## App name (30 characters max)
+DoseAlert: Pill Reminder
 
-## Short Description (80 characters max)
-Never miss a dose again! Track medications and get reliable reminders.
+## Short description (80 characters max)
+Medication reminders that ring at dose time. Track every pill, never miss a dose.
 
-## Full Description (4000 characters max)
+## Full description (4000 characters max)
 
-**DoseTime - Your Personal Medication Reminder**
+**DoseAlert: your medication reminder that actually rings**
 
-Take control of your health with DoseTime, the smart medication tracker designed to help you stay on top of your prescriptions — never miss a dose again!
+DoseAlert makes sure you take the right medicine at the right time. When a dose is due,
+your phone rings with an alarm, even when it's locked, until you choose Take, Skip
+or Snooze.
 
-🏥 **SIMPLE MEDICATION MANAGEMENT**
-• Add unlimited medications with custom names and dosages
-• Set multiple daily reminder times for each medication
-• Choose from beautiful color-coded pills for easy recognition
-• Works 100% offline — no internet required
+⏰ **ALARMS THAT GET YOUR ATTENTION**
+• A loud dose alarm at the exact time, on the lock screen too
+• Take, Skip or Snooze straight from the alarm
+• Follow-up reminders if you haven't answered
+• Choose your alarm sound: Classic Beep, Pill Shaker, Gentle Chime and more
+• Reminders keep working offline and after your phone restarts
 
-⏰ **RELIABLE REMINDERS**
-• Receive timely notifications even in battery-saving mode
-• Notifications persist after device restart
-• Quick "Take" or "Skip" actions directly from notifications
-• Works on Android 12+ with exact alarm support
+🕐 **YOUR DAY AT A GLANCE**
+• A clock-style dose wheel shows morning, afternoon, evening and night
+• See what's taken, missed or coming up today
+• Move between days to check past and upcoming doses
+
+💊 **ADD MEDICATIONS IN SECONDS**
+• Step-by-step setup: name, form, strength, how often and when
+• Pills, capsules, liquids, injections, inhalers, drops and more
+• Multiple doses a day, or "as needed"
+• Refill reminders when you're running low
 
 📊 **TRACK YOUR PROGRESS**
-• View your complete medication history
-• Monitor your adherence rate with beautiful charts
-• Track your streak of consecutive days
-• Export your data as JSON or CSV for your records
+• Full dose history and adherence charts
+• Streaks to keep you motivated
+• Export your history to share with your doctor
 
-🔒 **PRIVACY FIRST**
-• All data stored locally on YOUR device
-• AES-256 encryption for sensitive information
-• No cloud, no accounts, no data collection
-• GDPR compliant with full data export and deletion
+🔒 **PRIVATE BY DESIGN**
+• Your medications and history stay on your phone
+• No ads
+• Optional account. Sign in with Google or email, or use the app without one.
 
-✨ **PREMIUM FEATURES**
-Upgrade to DoseTime Pro for:
-• Unlimited medications (free version: 3)
-• Adherence insights and analytics
-• PDF report export
-• Priority support
+⭐ **DOSEALERT PRO**
+The free plan covers up to 3 medications. Pro unlocks unlimited medications. Choose
+monthly, yearly, or a one-time lifetime purchase through Google Play.
 
-💊 **WHO IS DOSETIME FOR?**
-• Anyone taking daily medications
-• Seniors managing multiple prescriptions
-• Caregivers tracking medications for loved ones
-• Anyone wanting better medication adherence
-
----
-
-⚠️ **IMPORTANT DISCLAIMER**
-DoseTime is a reminder tool only and is NOT a substitute for professional medical advice. Always follow your healthcare provider's instructions. Do not rely solely on this app for critical medications.
-
----
-
-Download DoseTime today and never forget your medication again!
+⚠️ **IMPORTANT**
+DoseAlert is a reminder tool, not a medical device, and does not give medical advice.
+Always follow your doctor's or pharmacist's instructions.
 
 ## Category
-Health & Fitness > Medical
+Medical (or Health & Fitness)
 
-## Tags/Keywords
-- medication reminder
-- pill tracker
-- medicine alarm
-- health tracker
-- prescription reminder
-- dose tracker
-- pill reminder app
-- medication management
+## Tags / keywords
+medication reminder, pill reminder, medicine alarm, dose tracker, pill tracker,
+prescription reminder
 
-## Content Rating
-Everyone
+## Content rating
+Complete the IARC questionnaire in Play Console. Expected result: Everyone / PEGI 3.
 
-## Contact Email
-support@hubert.dev
+## Contact email
+iheanachohubert@gmail.com
 
-## Privacy Policy URL
-https://hubert24hrs.github.io/DoseTime/privacy-policy
+## Policy URLs
+- Privacy policy: https://hubert24hrs.github.io/DoseTime/
+- Account deletion: https://hubert24hrs.github.io/DoseTime/delete-account.html
 
-## Languages Supported
-- English
-- Spanish (coming soon)
+## In-app products (create in Play Console → Monetize)
+
+Set each product's **default price in USD**. Google Play converts it for other
+countries and charges local currency there (for example ₦ in Nigeria).
+
+| Product | Type | Suggested product ID | Suggested price |
+|---|---|---|---|
+| DoseAlert Pro Monthly | Subscription (auto-renew, 1 month) | `dosealert_pro_monthly` | $2.99 |
+| DoseAlert Pro Yearly | Subscription (auto-renew, 1 year) | `dosealert_pro_yearly` | $24.99 |
+| DoseAlert Pro Lifetime | One-time product | `dosealert_pro_lifetime` | $49.99 |
+
+## Languages
+English

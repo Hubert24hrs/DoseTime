@@ -1,6 +1,4 @@
 import 'package:dose_time/core/services/streak_service.dart';
-import 'package:dose_time/core/services/ad_service.dart';
-import 'package:dose_time/core/services/purchase_service.dart';
 import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/core/widgets/pill_avatar.dart';
 import 'package:dose_time/features/medication/domain/models/medication.dart';
@@ -9,7 +7,6 @@ import 'package:dose_time/features/medication/presentation/widgets/dose_wheel.da
 import 'package:dose_time/features/reminders/services/notification_service.dart';
 import 'package:dose_time/features/reminders/services/reminder_scheduler.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,52 +21,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  BannerAd? _bannerAd;
-  bool _isBannerAdLoaded = false;
   DosePeriod? _selectedPeriod;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBannerAd();
-    _loadInterstitialAd();
-  }
-
-  void _loadInterstitialAd() async {
-    final isPro = await ref.read(isProUserProvider.future);
-    if (!isPro) {
-      ref.read(adServiceProvider).loadInterstitialAd();
-    }
-  }
-
-  @override
-  void dispose() {
-    _bannerAd?.dispose();
-    super.dispose();
-  }
-
-  void _loadBannerAd() async {
-    // Check pro status first
-    final isPro = await ref.read(isProUserProvider.future);
-    if (isPro) return;
-
-    _bannerAd = BannerAd(
-      adUnitId: AdService.bannerAdUnitId,
-      request: const AdRequest(),
-      size: AdSize.banner,
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          setState(() {
-            _isBannerAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, err) {
-          ad.dispose();
-          debugPrint('HomeScreen: Banner Ad failed to load - $err');
-        },
-      ),
-    )..load();
-  }
 
   void _shiftDay(int days) {
     HapticFeedback.selectionClick();
@@ -83,7 +35,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final date = ref.watch(selectedDateProvider);
     final scheduleAsync = ref.watch(scheduleForDateProvider(date));
     final asNeededAsync = ref.watch(asNeededMedicationsProvider);
-    final isProAsync = ref.watch(isProUserProvider);
     final isToday = DateUtils.isSameDay(date, DateTime.now());
 
     return Scaffold(
@@ -175,22 +126,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
 
-          // Ad Banner
-          isProAsync.when(
-            data: (isPro) {
-              if (!isPro && _isBannerAdLoaded && _bannerAd != null) {
-                return Container(
-                  alignment: Alignment.center,
-                  width: _bannerAd!.size.width.toDouble(),
-                  height: _bannerAd!.size.height.toDouble(),
-                  child: AdWidget(ad: _bannerAd!),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
         ],
       ),
     );
@@ -548,9 +483,7 @@ class _DoseActionSheetState extends ConsumerState<_DoseActionSheet> {
 
   Future<void> _take() async {
     await HapticFeedback.lightImpact();
-    final isPro = await ref.read(isProUserProvider.future);
     await _run(() => ref.read(logDoseProvider)(item, 'taken'), '${item.medication.name} marked as taken');
-    ref.read(adServiceProvider).showInterstitialAd(isPro);
   }
 
   Future<void> _snooze() async {

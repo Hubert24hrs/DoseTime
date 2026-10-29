@@ -1,23 +1,23 @@
-# Terms of Service for DoseTime
+# Terms of Service for DoseAlert
 
-**Last Updated:** February 1, 2026
+**Last Updated:** October 29, 2026
 
-Please read these Terms of Service ("Terms") carefully before using DoseTime ("the App").
+Please read these Terms of Service ("Terms") carefully before using DoseAlert ("the App").
 
 ## Acceptance of Terms
 
-By downloading, installing, or using DoseTime, you agree to be bound by these Terms. If you do not agree, do not use the App.
+By downloading, installing, or using DoseAlert, you agree to be bound by these Terms. If you do not agree, do not use the App.
 
 ## Description of Service
 
-DoseTime is a medication reminder application that helps users:
+DoseAlert is a medication reminder application that helps users:
 - Track medications and dosages
 - Receive reminder notifications
 - Log medication adherence history
 
 ## Medical Disclaimer
 
-> **⚠️ IMPORTANT: DoseTime is NOT a substitute for professional medical advice.**
+> **⚠️ IMPORTANT: DoseAlert is NOT a substitute for professional medical advice.**
 
 - The App is a reminder tool only
 - Always follow your healthcare provider's instructions
@@ -35,8 +35,9 @@ You agree to:
 
 ## In-App Purchases
 
-- DoseTime Pro features require a one-time purchase
+- DoseAlert Pro is available as a monthly or yearly subscription, or a one-time lifetime purchase
 - Purchases are processed through Google Play
+- Subscriptions renew automatically until cancelled; cancel anytime in Google Play → Payments & subscriptions
 - Refunds are subject to Google Play's refund policy
 - Prices may change with notice
 
@@ -77,7 +78,7 @@ These Terms are governed by the laws of Nigeria.
 
 For questions about these Terms:
 
-**Email:** legal@hubert.dev
+**Email:** iheanachohubert@gmail.com
 **GitHub:** https://github.com/Hubert24hrs/DoseTime
 
 ---

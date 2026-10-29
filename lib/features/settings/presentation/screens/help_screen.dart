@@ -157,7 +157,7 @@ class HelpScreen extends StatelessWidget {
   }
 
   Future<void> _launchEmail() async {
-    final uri = Uri.parse('mailto:support@hubert.dev?subject=DoseAlert%20Help');
+    final uri = Uri.parse('mailto:iheanachohubert@gmail.com?subject=DoseAlert%20Help');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }

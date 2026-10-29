@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -142,42 +141,8 @@ class NotificationService {
     // Force channel recreation to reset and ensure sound/vibration
     await _createNotificationChannels(forceReset: true);
     
-    // Request battery optimization exemption for reliable background notifications
-    await requestBatteryOptimizationExemption();
-
     _isInitialized = true;
     debugPrint('NotificationService: Initialized successfully');
-  }
-
-  /// Request battery optimization exemption for reliable background notifications
-  Future<bool> requestBatteryOptimizationExemption() async {
-    if (kIsWeb || !Platform.isAndroid) return true;
-    
-    try {
-      final status = await Permission.ignoreBatteryOptimizations.status;
-      if (status.isGranted) {
-        debugPrint('NotificationService: Battery optimization already exempt');
-        return true;
-      }
-      
-      final result = await Permission.ignoreBatteryOptimizations.request();
-      debugPrint('NotificationService: Battery optimization request result: $result');
-      return result.isGranted;
-    } catch (e) {
-      debugPrint('NotificationService: Failed to request battery optimization exemption: $e');
-      return false;
-    }
-  }
-  
-  /// Check if battery optimization is disabled (app is exempt)
-  Future<bool> isBatteryOptimizationExempt() async {
-    if (kIsWeb || !Platform.isAndroid) return true;
-    
-    try {
-      return await Permission.ignoreBatteryOptimizations.isGranted;
-    } catch (e) {
-      return false;
-    }
   }
 
   /// Create notification channels for Android
@@ -467,7 +432,7 @@ class NotificationService {
   Future<void> scheduleTestAlarm({Duration delay = const Duration(seconds: 10)}) async {
     await scheduleOneTimeNotification(
       id: 999,
-      title: 'DoseAlert test alarm',
+      title: 'DoseAlert alarm preview',
       body: 'This is how your dose reminders will beep.',
       scheduledDateTime: DateTime.now().add(delay),
       payload: 'test',

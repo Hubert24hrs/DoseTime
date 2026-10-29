@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoseAlert - Delete Your Account</title>
+    <style>
+        :root { --primary: #1C7ED6; --bg: #ffffff; --text: #1B2733; --muted: #5f6b76; }
+        @media (prefers-color-scheme: dark) {
+            :root { --primary: #74B4EE; --bg: #0F1720; --text: #e3e8ee; --muted: #9aa6b2; }
+        }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;
+               max-width: 800px; margin: 0 auto; padding: 2rem 1rem; background: var(--bg); color: var(--text); }
+        h1 { color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: .5rem; }
+        h2 { color: var(--primary); margin-top: 2rem; }
+        a { color: var(--primary); }
+        ol, ul { padding-left: 1.5rem; }
+        nav { font-size: .9rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <nav><a href="index.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a> · <a href="delete-account.html">Delete your account</a></nav>
+    <h1>Delete your DoseAlert account</h1>
+    <p>DoseAlert (by Hubert Idoko) lets you delete your account and its associated data at any time.</p>
+
+    <h2>Option 1: In the app (immediate)</h2>
+    <ol>
+        <li>Open DoseAlert and go to <strong>Manage → Account</strong>.</li>
+        <li>Tap <strong>Delete account</strong>.</li>
+        <li>Confirm with your password, or with Google or Apple if you signed in that way.</li>
+    </ol>
+    <p>Your account is deleted immediately.</p>
+
+    <h2>Option 2: By email (if you no longer have the app)</h2>
+    <p>Send an email to <a href="mailto:iheanachohubert@gmail.com?subject=DoseAlert%20account%20deletion%20request">iheanachohubert@gmail.com</a> with the subject "DoseAlert account deletion request", from the email address you used to sign in. We will verify the request and delete your account within 30 days, and confirm by email.</p>
+
+    <h2>What is deleted</h2>
+    <ul>
+        <li>Your DoseAlert account: email address, display name, sign-in methods and user ID (stored in Google Firebase Authentication).</li>
+    </ul>
+
+    <h2>What is kept, and for how long</h2>
+    <ul>
+        <li><strong>Medication data on your phone</strong> is never uploaded, so deleting your account does not remove it. Delete it in <em>Manage → Data Management</em>, or by uninstalling the app.</li>
+        <li><strong>Purchase records</strong> are kept by Google Play and RevenueCat as required for billing, tax and legal purposes. Deleting your account does not cancel a subscription. Cancel it in Google Play → Payments &amp; subscriptions.</li>
+        <li><strong>Anonymous analytics and crash data</strong> are kept for up to 14 months, then deleted automatically.</li>
+    </ul>
+</body>
+</html>

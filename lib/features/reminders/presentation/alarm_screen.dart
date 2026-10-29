@@ -150,7 +150,7 @@ class _AlarmScreenState extends ConsumerState<AlarmScreen> {
               Expanded(
                 child: Text(
                   _isTest
-                      ? 'This is a test. Your dose reminders will beep like this.'
+                      ? 'This is a preview. Your dose reminders will ring like this.'
                       : 'Hello, it\'s time to take your $timeLabel meds.',
                   style: const TextStyle(color: Colors.white, fontSize: 20, height: 1.3),
                 ),
@@ -193,7 +193,7 @@ class _AlarmScreenState extends ConsumerState<AlarmScreen> {
                       ? Padding(
                           padding: const EdgeInsets.all(24),
                           child: Text(
-                            _isTest ? 'Sample Medication · Take 1 pill(s)' : 'All doses for this time are done.',
+                            _isTest ? 'Your medications will be listed here.' : 'All doses for this time are done.',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Colors.grey.shade700),
                           ),

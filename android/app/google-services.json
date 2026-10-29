@@ -30,6 +30,22 @@
           }
         },
         {
+          "client_id": "957206156322-gk4smchjsl0k5pahbvln0k8cmei2n7qn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "dev.hubert.dosetime",
+            "certificate_hash": "0482d7f23f0a762b74575901fcd1b87b08da1db7"
+          }
+        },
+        {
+          "client_id": "957206156322-o0mclqtekf5041fcvf74n6ffk3rv040l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "dev.hubert.dosetime",
+            "certificate_hash": "ccc0fe7f9ba6a96deb843cd68680543d22f2bb0b"
+          }
+        },
+        {
           "client_id": "957206156322-52iuvircrs52oij808as81m1p0vc186d.apps.googleusercontent.com",
           "client_type": 3
         }

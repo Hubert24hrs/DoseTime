@@ -1,4 +1,6 @@
 import 'package:dose_time/core/theme/app_theme.dart';
+import 'package:dose_time/core/services/purchase_service.dart';
+import 'package:dose_time/core/utils/app_constants.dart';
 import 'package:dose_time/features/auth/presentation/providers/auth_providers.dart';
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
@@ -12,6 +14,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+const String _privacyPolicyUrl = 'https://hubert24hrs.github.io/DoseTime/';
+
+/// App version from the build (flutter build sets FLUTTER_BUILD_NAME from pubspec).
+const String _appVersion = String.fromEnvironment('FLUTTER_BUILD_NAME', defaultValue: '2.0.0');
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -44,19 +51,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             );
           }),
 
-          // Pro Status
-          ListTile(
-            leading: Icon(Icons.star, color: settings.isPro ? Colors.amber : Colors.grey),
-            title: const Text('Pro Status'),
-            subtitle: Text(settings.isPro ? 'Active' : 'Free Plan (Max 2 Meds)'),
-            trailing: settings.isPro 
-              ? null 
-              : ElevatedButton(
-                  onPressed: () => context.push('/upgrade'),
-                  child: const Text('Upgrade'),
-                ),
-            onTap: !settings.isPro ? () => context.push('/upgrade') : null,
-          ),
+          // Pro Status (verified with Google Play via RevenueCat)
+          Consumer(builder: (context, ref, _) {
+            final isPro = ref.watch(isProUserProvider).valueOrNull ?? false;
+            return ListTile(
+              leading: Icon(Icons.star, color: isPro ? Colors.amber : Colors.grey),
+              title: const Text('Pro Status'),
+              subtitle: Text(isPro
+                  ? 'Active'
+                  : 'Free plan (up to ${AppConstants.freeMedicationLimit} medications)'),
+              trailing: isPro
+                  ? null
+                  : ElevatedButton(
+                      onPressed: () => context.push('/upgrade'),
+                      child: const Text('Upgrade'),
+                    ),
+              onTap: isPro ? null : () => context.push('/upgrade'),
+            );
+          }),
           const Divider(),
           
           // Appearance Section
@@ -96,8 +108,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.notifications_active_outlined),
-            title: const Text('Test dose alarm'),
-            subtitle: const Text('Beeps in 10 seconds — lock your phone to try it'),
+            title: const Text('Preview dose alarm'),
+            subtitle: const Text('Rings in 10 seconds so you can check the volume — lock your phone to try it'),
             trailing: const Icon(Icons.play_circle_outline),
             onTap: () async {
               final ns = NotificationService();
@@ -105,7 +117,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               await ns.scheduleTestAlarm();
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Test alarm set — it will beep in 10 seconds')),
+                const SnackBar(content: Text('Preview alarm set — it will ring in 10 seconds')),
               );
             },
           ),
@@ -173,13 +185,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('Privacy Policy'),
-            subtitle: const Text('Data stored locally'),
+            subtitle: const Text('Medication data stays on this phone'),
             onTap: () => _showPrivacyPolicy(context),
           ),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('About DoseAlert'),
-            subtitle: const Text('Version 1.1.0'),
+            subtitle: const Text('Version $_appVersion'),
             onTap: () => _showAboutDialog(context),
           ),
           const Divider(),
@@ -432,7 +444,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _launchStore(BuildContext context) async {
-    const url = 'https://play.google.com/store/apps/details?id=com.hubert.dosetime';
+    const url = 'https://play.google.com/store/apps/details?id=dev.hubert.dosetime';
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
@@ -449,10 +461,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Privacy Policy'),
-        content: const Text(
-          'Your privacy is our priority. All your medication data is stored locally on your device and is never uploaded to any external server. We do not track or collect any personal information.',
+        content: const SingleChildScrollView(
+          child: Text(
+            'Your medications, schedules and dose history are stored only on this phone and are never uploaded.\n\n'
+            'If you create an optional account, your email, name and sign-in method are stored with Google Firebase Authentication.\n\n'
+            'Firebase Analytics and Crashlytics collect app usage and crash information to help us fix problems. '
+            'Pro purchases are processed by Google Play and verified through RevenueCat.\n\n'
+            'DoseAlert has no ads and does not sell your data.',
+          ),
         ),
         actions: [
+          TextButton(
+            onPressed: () => launchUrl(Uri.parse(_privacyPolicyUrl), mode: LaunchMode.externalApplication),
+            child: const Text('Full policy'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
