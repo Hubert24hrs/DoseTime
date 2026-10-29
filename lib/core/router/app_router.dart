@@ -14,6 +14,10 @@ import 'package:dose_time/features/history/presentation/screens/history_screen.d
 import 'package:dose_time/features/history/presentation/screens/adherence_insights_screen.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
 import 'package:dose_time/features/reminders/presentation/alarm_screen.dart';
+import 'package:dose_time/features/auth/presentation/screens/account_screen.dart';
+import 'package:dose_time/features/auth/presentation/screens/forgot_password_screen.dart';
+import 'package:dose_time/features/auth/presentation/screens/register_screen.dart';
+import 'package:dose_time/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:dose_time/features/settings/presentation/screens/alarm_sound_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -101,6 +105,32 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/settings',
                 builder: (context, state) => const SettingsScreen(),
                 routes: [
+                  // Optional account. No redirect gating, so signing in or
+                  // out never bounces the user between screens.
+                  GoRoute(
+                    path: 'account',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const AccountScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'sign-in',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) => const SignInScreen(),
+                      ),
+                      GoRoute(
+                        path: 'register',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) => const RegisterScreen(),
+                      ),
+                      GoRoute(
+                        path: 'forgot-password',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) => ForgotPasswordScreen(
+                          initialEmail: state.extra is String ? state.extra as String : null,
+                        ),
+                      ),
+                    ],
+                  ),
                   GoRoute(
                     path: 'contacts',
                     parentNavigatorKey: _rootNavigatorKey,

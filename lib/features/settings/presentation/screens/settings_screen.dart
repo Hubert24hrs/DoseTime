@@ -1,4 +1,5 @@
 import 'package:dose_time/core/theme/app_theme.dart';
+import 'package:dose_time/features/auth/presentation/providers/auth_providers.dart';
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/features/reminders/services/notification_service.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
@@ -29,6 +30,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          // Account (optional sign-in)
+          Consumer(builder: (context, ref, _) {
+            final user = ref.watch(authStateProvider).valueOrNull;
+            return ListTile(
+              leading: const Icon(Icons.account_circle_outlined),
+              title: const Text('Account'),
+              subtitle: Text(user == null
+                  ? 'Not signed in (optional)'
+                  : (user.email ?? user.displayName ?? 'Signed in')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/settings/account'),
+            );
+          }),
+
           // Pro Status
           ListTile(
             leading: Icon(Icons.star, color: settings.isPro ? Colors.amber : Colors.grey),
