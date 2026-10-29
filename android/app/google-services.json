@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "957206156322-1dafoe4k5qhnj9b36i0afkc1d81s5hsp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "dev.hubert.dosetime",
+            "certificate_hash": "e9558d481c017bbffd0c4093e6d4ae3a2ad72321"
+          }
+        },
+        {
           "client_id": "957206156322-bj5u76o8kftf7em4g3v1p9kfenp1qk4a.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
