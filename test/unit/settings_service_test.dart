@@ -30,17 +30,6 @@ void main() {
       });
     });
 
-    group('Pro Status', () {
-      test('should return false by default', () {
-        expect(settingsService.isPro, false);
-      });
-
-      test('should return true after upgrading', () async {
-        await settingsService.setIsPro(true);
-        expect(settingsService.isPro, true);
-      });
-    });
-
     group('Onboarding', () {
       test('should return false by default', () {
         expect(settingsService.onboardingComplete, false);

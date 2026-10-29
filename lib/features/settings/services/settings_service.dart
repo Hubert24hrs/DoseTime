@@ -20,8 +20,8 @@ class SettingsService {
   bool get disclaimerAccepted => _prefs.getBool('disclaimer_accepted') ?? false;
   Future<void> setDisclaimerAccepted(bool value) => _prefs.setBool('disclaimer_accepted', value);
 
-  bool get isPro => _prefs.getBool('is_pro') ?? false;
-  Future<void> setIsPro(bool value) => _prefs.setBool('is_pro', value);
+  // Pro status is not stored here: it comes only from a verified store
+  // purchase (see PurchaseService).
 
   bool get onboardingComplete => _prefs.getBool('onboarding_complete') ?? false;
   Future<void> setOnboardingComplete(bool value) => _prefs.setBool('onboarding_complete', value);

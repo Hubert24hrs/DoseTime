@@ -1,7 +1,7 @@
 import 'package:dose_time/core/theme/app_theme.dart';
 import 'package:dose_time/core/widgets/three_d_button.dart';
 import 'package:dose_time/core/services/purchase_service.dart';
-import 'package:dose_time/features/settings/services/settings_service.dart';
+import 'package:dose_time/core/utils/app_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,13 +18,6 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
   bool _isLoading = false;
   String? _error;
   String? _selectedPlanId;
-
-  @override
-  void initState() {
-    super.initState();
-    // Pre-select yearly as default (best value)
-    _selectedPlanId = 'yearly';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,11 +88,16 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
                 const SizedBox(height: 24),
 
                 // Features
-                _buildFeatureRow(Icons.all_inclusive, 'Unlimited Medications'),
-                _buildFeatureRow(Icons.notifications_off, 'Ad-Free Experience'),
-                _buildFeatureRow(Icons.support_agent, 'Priority Support'),
-                _buildFeatureRow(Icons.new_releases, 'Early Access Features'),
-                _buildFeatureRow(Icons.local_fire_department, 'Streak Tracking & Badges'),
+                _buildFeatureRow(Icons.all_inclusive, 'Unlimited medications'),
+                _buildFeatureRow(Icons.family_restroom, 'Track every prescription and supplement'),
+                _buildFeatureRow(Icons.favorite_outline, 'Support DoseAlert\'s development'),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'The free plan includes up to ${AppConstants.freeMedicationLimit} medications.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  ),
+                ),
 
                 const SizedBox(height: 24),
                 
@@ -119,7 +117,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
                       child: CircularProgressIndicator(),
                     ),
                   ),
-                  error: (e, _) => _buildFallbackPlans(),
+                  error: (e, _) => _buildUnavailable(),
                 ),
 
                 const SizedBox(height: 20),
@@ -138,7 +136,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
                 // Purchase button
                 ThreeDButton(
                   color: brandBlue,
-                  onPressed: _isLoading ? null : () => _purchaseSelectedPlan(),
+                  onPressed: _isLoading || _selectedPlanId == null ? null : () => _purchaseSelectedPlan(),
                   child: _isLoading
                       ? const SizedBox(
                           height: 24,
@@ -146,7 +144,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          'Get ${_getPlanDisplayName(_selectedPlanId ?? "yearly")}',
+                          _selectedPlanId == null ? 'Choose a plan' : 'Get ${_getPlanDisplayName(_selectedPlanId!)}',
                           style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                 ),
@@ -164,7 +162,9 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
 
                 // Terms
                 Text(
-                  'Subscriptions auto-renew unless cancelled 24h before period ends.',
+                  'Payment is charged to your Google Play account. Subscriptions renew automatically '
+                  'unless cancelled at least 24 hours before the end of the current period. '
+                  'Manage or cancel anytime in Google Play → Payments & subscriptions.',
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                   textAlign: TextAlign.center,
                 ),
@@ -188,7 +188,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
     final packages = offerings?.current?.availablePackages ?? [];
 
     if (packages.isEmpty) {
-      return _buildFallbackPlans();
+      return _buildUnavailable();
     }
 
     // Sort packages: Monthly, Yearly, Lifetime
@@ -200,10 +200,12 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
       return aOrder.compareTo(bOrder);
     });
 
-    // If no plan selected, select first one
-    if (_selectedPlanId == null && sortedPackages.isNotEmpty) {
+    // Pre-select the yearly plan when offered, otherwise the first one.
+    if (_selectedPlanId == null || !sortedPackages.any((p) => p.identifier == _selectedPlanId)) {
+      final yearly = sortedPackages.where((p) => p.packageType == PackageType.annual);
+      final pick = (yearly.isNotEmpty ? yearly.first : sortedPackages.first).identifier;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() => _selectedPlanId = sortedPackages[0].identifier);
+        if (mounted) setState(() => _selectedPlanId = pick);
       });
     }
 
@@ -224,35 +226,36 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
     );
   }
 
-  Widget _buildFallbackPlans() {
-    return Column(
-      children: [
-        _buildPlanCard(
-          id: 'monthly',
-          title: 'Monthly',
-          price: '£2.99/month',
-          description: 'Billed monthly',
-          isSelected: _selectedPlanId == 'monthly',
-          onTap: () => setState(() => _selectedPlanId = 'monthly'),
-        ),
-        _buildPlanCard(
-          id: 'yearly',
-          title: 'Yearly',
-          price: '£24.99/year',
-          description: 'Save 30% - Billed annually',
-          badge: 'BEST VALUE',
-          isSelected: _selectedPlanId == 'yearly',
-          onTap: () => setState(() => _selectedPlanId = 'yearly'),
-        ),
-        _buildPlanCard(
-          id: 'lifetime',
-          title: 'Lifetime',
-          price: '£49.99',
-          description: 'One-time purchase, forever',
-          isSelected: _selectedPlanId == 'lifetime',
-          onTap: () => setState(() => _selectedPlanId = 'lifetime'),
-        ),
-      ],
+  /// Shown when the store can't provide plans (offline, or purchases not set
+  /// up for this build). Nothing can be bought or unlocked from here.
+  Widget _buildUnavailable() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.cloud_off_outlined, color: Colors.grey, size: 32),
+          const SizedBox(height: 8),
+          const Text(
+            'Plans aren\'t available right now',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Check your internet connection and make sure Google Play is signed in, then try again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          ),
+          TextButton(
+            onPressed: () => ref.invalidate(offeringsProvider),
+            child: const Text('Try again'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -373,7 +376,7 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
   String _getPlanDescription(String identifier) {
     final id = identifier.toLowerCase();
     if (id.contains('month')) return 'Billed monthly';
-    if (id.contains('year') || id.contains('annual')) return 'Save 30% - Billed annually';
+    if (id.contains('year') || id.contains('annual')) return 'Billed once a year';
     if (id.contains('lifetime')) return 'One-time purchase, forever';
     return '';
   }
@@ -396,60 +399,37 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
       final purchaseService = ref.read(purchaseServiceProvider);
       final offerings = await purchaseService.getOfferings();
       final packages = offerings?.current?.availablePackages ?? [];
+      final matches = packages.where((p) => p.identifier == _selectedPlanId);
 
-      Package? selectedPackage;
-      for (final pkg in packages) {
-        if (pkg.identifier == _selectedPlanId) {
-          selectedPackage = pkg;
-          break;
-        }
-      }
-
-      if (selectedPackage == null) {
-        // Fallback: simulated purchase for testing
-        await _simulatePurchase();
+      if (matches.isEmpty) {
+        setState(() => _error = 'This plan isn\'t available right now. Please try again later.');
         return;
       }
 
-      final success = await purchaseService.purchasePackage(selectedPackage);
+      final outcome = await purchaseService.purchasePackage(matches.first);
+      ref.invalidate(isProUserProvider);
 
-      if (success) {
-        await ref.read(settingsServiceProvider).setIsPro(true);
-        ref.invalidate(isProUserProvider);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Welcome to DoseAlert Pro! 🎉')),
-          );
-          context.pop();
-        }
-      } else {
-        setState(() {
-          _error = 'Purchase was cancelled or failed';
-        });
+      switch (outcome) {
+        case PurchaseOutcome.success:
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Welcome to DoseAlert Pro! 🎉')),
+            );
+            context.pop();
+          }
+        case PurchaseOutcome.cancelled:
+          break;
+        case PurchaseOutcome.pending:
+          setState(() => _error = 'Your payment is pending. Pro unlocks as soon as Google Play confirms it.');
+        case PurchaseOutcome.failed:
+          setState(() => _error = 'The purchase didn\'t go through. You haven\'t been charged; please try again.');
       }
     } catch (e) {
-      setState(() {
-        _error = 'An error occurred: $e';
-      });
+      setState(() => _error = 'Something went wrong. Please try again.');
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
-    }
-  }
-
-  Future<void> _simulatePurchase() async {
-    await Future.delayed(const Duration(seconds: 1));
-    await ref.read(settingsServiceProvider).setIsPro(true);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Welcome to DoseAlert Pro! (Test Mode) 🎉')),
-      );
-      context.pop();
     }
   }
 
@@ -463,9 +443,8 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
       final purchaseService = ref.read(purchaseServiceProvider);
       final success = await purchaseService.restorePurchases();
 
+      ref.invalidate(isProUserProvider);
       if (success) {
-        await ref.read(settingsServiceProvider).setIsPro(true);
-        ref.invalidate(isProUserProvider);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -475,12 +454,12 @@ class _ProUpgradeScreenState extends ConsumerState<ProUpgradeScreen> {
         }
       } else {
         setState(() {
-          _error = 'No previous purchases found';
+          _error = 'No active Pro purchase found for this Google account.';
         });
       }
     } catch (e) {
       setState(() {
-        _error = 'Failed to restore: $e';
+        _error = 'Couldn\'t reach Google Play. Please try again.';
       });
     } finally {
       if (mounted) {

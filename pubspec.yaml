@@ -2,7 +2,7 @@ name: dose_time
 description: "DoseAlert - Your personal medication reminder assistant."
 publish_to: 'none'
 
-version: 1.1.0+3
+version: 2.0.0+10
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -25,7 +25,6 @@ dependencies:
   shared_preferences: ^2.2.2
   purchases_flutter: ^8.0.0
   table_calendar: ^3.1.2
-  google_mobile_ads: ^4.0.0
   
   # Security & Storage
   flutter_secure_storage: ^9.0.0

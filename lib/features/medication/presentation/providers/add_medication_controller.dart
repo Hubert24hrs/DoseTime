@@ -4,7 +4,8 @@ import 'package:dose_time/features/medication/presentation/providers/repository_
 import 'package:dose_time/features/medication/domain/models/medication.dart' show MedicationType;
 import 'package:dose_time/features/reminders/services/notification_service.dart';
 import 'package:dose_time/features/reminders/services/reminder_scheduler.dart';
-import 'package:dose_time/features/settings/services/settings_service.dart';
+import 'package:dose_time/core/services/purchase_service.dart';
+import 'package:dose_time/core/utils/app_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,13 +37,16 @@ class AddMedicationController extends AutoDisposeNotifier<AddMedicationState> {
     state = AddMedicationState(isLoading: true);
     try {
       final repository = ref.read(medicationRepositoryProvider);
-      final settings = ref.read(settingsServiceProvider);
-      
-      // Limit Check
-      if (!settings.isPro) {
+      // Free plan limit; Pro status comes from a verified store purchase.
+      final isPro = await PurchaseService().isProUser();
+      if (!isPro) {
         final currentMeds = await repository.getAllMedications();
-        if (currentMeds.length >= 3) {
-          state = AddMedicationState(isLoading: false, error: 'Limit Reached (3). Upgrade to Pro!');
+        if (currentMeds.length >= AppConstants.freeMedicationLimit) {
+          state = AddMedicationState(
+            isLoading: false,
+            error: 'The free plan includes up to ${AppConstants.freeMedicationLimit} medications. '
+                'Upgrade to Pro for unlimited.',
+          );
           return false;
         }
       }

@@ -115,6 +115,7 @@ jobs:
     env:
       KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      REVENUECAT_GOOGLE_API_KEY: ${{ secrets.REVENUECAT_GOOGLE_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -159,9 +160,14 @@ jobs:
         if: env.KEYSTORE_BASE64 != '' && env.KEYSTORE_PASSWORD != ''
         run: flutter pub get
 
+      - name: Purchases not configured
+        if: env.REVENUECAT_GOOGLE_API_KEY == ''
+        run: echo "::warning::REVENUECAT_GOOGLE_API_KEY is not set; Pro purchases will be unavailable in this bundle."
+
+      # The RevenueCat public SDK key is injected at build time (never stored in source).
       - name: Build signed App Bundle
         if: env.KEYSTORE_BASE64 != '' && env.KEYSTORE_PASSWORD != ''
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --dart-define=REVENUECAT_GOOGLE_API_KEY="$REVENUECAT_GOOGLE_API_KEY"
 
       - name: Upload Release AAB
         if: env.KEYSTORE_BASE64 != '' && env.KEYSTORE_PASSWORD != ''
