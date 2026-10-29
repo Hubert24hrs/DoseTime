@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "957206156322-h9fjpfnnodbsc27mev9op8d67ip2u77b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "dev.hubert.dosetime",
+            "certificate_hash": "e36e3a6fcf0252ceee35459ddab3db5648df5ff8"
+          }
+        },
+        {
           "client_id": "957206156322-52iuvircrs52oij808as81m1p0vc186d.apps.googleusercontent.com",
           "client_type": 3
         }

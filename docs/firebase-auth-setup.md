@@ -44,8 +44,11 @@ open **Project settings**, then **DoseAlert Android**, then **Add fingerprint**,
 After adding fingerprints, download `google-services.json` again and replace
 `android/app/google-services.json`. Only the `oauth_client` list changes.
 
-The CI test APKs (`test-apk.yml`) are signed with a throwaway key generated on each run,
-so Google Sign-In won't work in them. Email/password will.
+CI test APKs (`test-apk.yml`) are signed with a dedicated test key stored in the
+`CI_TEST_KEYSTORE_BASE64` repository secret. Its fingerprints are registered in Firebase
+(SHA-1 `E3:6E:3A:6F:CF:02:52:CE:EE:35:45:9D:DA:B3:DB:56:48:DF:5F:F8`), so Google Sign-In
+works in those builds. If the secret is missing, CI falls back to a throwaway key; the build
+still works, but Google Sign-In won't.
 
 ### Sign in with Apple (iOS only)
 
