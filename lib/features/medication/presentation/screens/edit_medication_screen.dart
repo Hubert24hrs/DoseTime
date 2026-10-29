@@ -54,7 +54,7 @@ class _EditMedicationScreenState extends ConsumerState<EditMedicationScreen> {
         _frequency = medication.frequency;
         _selectedColor = Color(medication.color);
         _selectedIcon = medication.icon != null 
-            ? IconData(medication.icon!, fontFamily: 'MaterialIcons') 
+            ? AppConstants.iconFor(medication.icon) 
             : AppConstants.medicationIcons.first;
         _selectedType = medication.type;
         _instructionsController.text = medication.instructions ?? '';
