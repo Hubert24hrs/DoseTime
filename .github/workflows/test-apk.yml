@@ -47,7 +47,8 @@ jobs:
           fi
 
       - name: Build APK (Release)
-        run: flutter build apk --release
+        # Medication icons are stored as code points, so icons must not be tree-shaken.
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Prepare APK and QR code
         run: |
