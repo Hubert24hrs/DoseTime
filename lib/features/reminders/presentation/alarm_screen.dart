@@ -31,7 +31,7 @@ class _AlarmScreenState extends ConsumerState<AlarmScreen> {
   @override
   void initState() {
     super.initState();
-    AlarmSound.start();
+    AlarmSound.start(sound: ref.read(settingsServiceProvider).alarmSound);
   }
 
   @override

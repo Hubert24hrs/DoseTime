@@ -14,6 +14,7 @@ import 'package:dose_time/features/history/presentation/screens/history_screen.d
 import 'package:dose_time/features/history/presentation/screens/adherence_insights_screen.dart';
 import 'package:dose_time/features/settings/services/settings_service.dart';
 import 'package:dose_time/features/reminders/presentation/alarm_screen.dart';
+import 'package:dose_time/features/settings/presentation/screens/alarm_sound_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -118,6 +119,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                         ),
                       ),
                     ],
+                  ),
+                  GoRoute(
+                    path: 'sound',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const AlarmSoundScreen(),
                   ),
                   GoRoute(
                     path: 'data',

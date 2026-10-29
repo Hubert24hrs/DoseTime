@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:typed_data';
+import 'package:dose_time/features/reminders/services/alarm_tones.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,10 +12,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Channel used for dose alarms. Android channels are immutable once created,
-/// so the id is versioned whenever the sound/importance changes.
-const String doseAlarmChannelId = 'dose_alarm_v2';
+/// Dose alarm channels are named per tone because Android channels can't
+/// change their sound after creation: "dose_alarm_<toneId>".
 const String doseAlarmChannelName = 'Dose Alarms';
+String doseAlarmChannelId(String toneId) => 'dose_alarm_$toneId';
 
 /// Payload helpers: reminders carry "dose|<medId>|<HH:mm>" so a tap can open
 /// the alarm screen for the right time slot.
@@ -41,6 +43,10 @@ class NotificationService {
 
   bool _isInitialized = false;
   bool _launchConsumed = false;
+  String _alarmTone = defaultAlarmToneId;
+
+  /// Tone id used by dose alarms (see alarm_tones.dart).
+  String get alarmTone => _alarmTone;
 
   /// Notification taps and action button presses while the app is running.
   static final StreamController<NotificationResponse> _responses =
@@ -70,6 +76,13 @@ class NotificationService {
   /// Initialize the notification service
   Future<void> initialize() async {
     if (_isInitialized) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _alarmTone = alarmToneById(prefs.getString('alarm_sound')).id;
+    } catch (e) {
+      debugPrint('NotificationService: could not read alarm tone: $e');
+    }
 
     tz.initializeTimeZones();
     try {
@@ -178,19 +191,26 @@ class NotificationService {
         // Older builds used a channel without the custom beep; remove it so
         // users only see the current alarm channel.
         await androidPlugin?.deleteNotificationChannel('medication_reminders');
+        await androidPlugin?.deleteNotificationChannel('dose_alarm_v2');
         await androidPlugin?.deleteNotificationChannel('general');
+      }
+      // Only the selected tone's channel should exist.
+      for (final tone in alarmTones) {
+        if (tone.id != _alarmTone) {
+          await androidPlugin?.deleteNotificationChannel(doseAlarmChannelId(tone.id));
+        }
       }
 
       // Alarm channel: plays the looping dose beep on the alarm stream so it
       // is audible even when media volume is muted.
       await androidPlugin?.createNotificationChannel(
         AndroidNotificationChannel(
-          doseAlarmChannelId,
+          doseAlarmChannelId(_alarmTone),
           doseAlarmChannelName,
           description: 'Beeping alarms when it is time to take a dose',
           importance: Importance.max,
           playSound: true,
-          sound: const RawResourceAndroidNotificationSound('dose_beep'),
+          sound: RawResourceAndroidNotificationSound(_alarmTone),
           enableVibration: true,
           showBadge: true,
           enableLights: true,
@@ -210,6 +230,13 @@ class NotificationService {
         ),
       );
     }
+  }
+
+  /// Switch dose alarms to [toneId]. Callers must reschedule pending alarms
+  /// (ReminderScheduler.syncAll) so they use the new channel.
+  Future<void> setAlarmTone(String toneId) async {
+    _alarmTone = alarmToneById(toneId).id;
+    await _createNotificationChannels();
   }
 
   /// Get local timezone
@@ -301,13 +328,13 @@ class NotificationService {
   NotificationDetails _alarmDetails(String body) {
     return NotificationDetails(
       android: AndroidNotificationDetails(
-        doseAlarmChannelId,
+        doseAlarmChannelId(_alarmTone),
         doseAlarmChannelName,
         channelDescription: 'Beeping alarms when it is time to take a dose',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
-        sound: const RawResourceAndroidNotificationSound('dose_beep'),
+        sound: RawResourceAndroidNotificationSound(_alarmTone),
         enableVibration: true,
         vibrationPattern: Int64List.fromList([0, 800, 400, 800, 400, 800]),
         category: AndroidNotificationCategory.alarm,

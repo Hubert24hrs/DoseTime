@@ -57,7 +57,12 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "startBeep" -> {
-                        startBeep()
+                        startBeep(call.argument<String>("sound"), loop = true)
+                        result.success(true)
+                    }
+                    "previewSound" -> {
+                        // Plays a tone once for the sound picker.
+                        startBeep(call.argument<String>("sound"), loop = false)
                         result.success(true)
                     }
                     "clearShownAlarms" -> {
@@ -76,11 +81,17 @@ class MainActivity : FlutterActivity() {
             }
     }
 
-    private fun startBeep() {
+    private fun rawSoundId(name: String?): Int {
+        if (name.isNullOrEmpty()) return R.raw.dose_beep
+        val id = resources.getIdentifier(name, "raw", packageName)
+        return if (id != 0) id else R.raw.dose_beep
+    }
+
+    private fun startBeep(sound: String?, loop: Boolean) {
         stopBeep()
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (loop) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         try {
-            val afd = resources.openRawResourceFd(R.raw.dose_beep)
+            val afd = resources.openRawResourceFd(rawSoundId(sound))
             val mp = MediaPlayer()
             mp.setAudioAttributes(
                 AudioAttributes.Builder()
@@ -90,11 +101,12 @@ class MainActivity : FlutterActivity() {
             )
             mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
             afd.close()
-            mp.isLooping = true
+            mp.isLooping = loop
             mp.prepare()
             mp.start()
             player = mp
         } catch (e: Exception) {
+            if (!loop) return
             // Fall back to a generated tone if the bundled sound can't be played.
             startToneFallback()
         }

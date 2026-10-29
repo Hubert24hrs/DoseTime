@@ -41,6 +41,10 @@ class SettingsService {
   int get defaultSnoozeDuration => _prefs.getInt('snooze_duration') ?? 5; // minutes
   Future<void> setDefaultSnoozeDuration(int minutes) => _prefs.setInt('snooze_duration', minutes);
 
+  /// Raw resource name of the dose alarm sound (see alarm_tones.dart).
+  String get alarmSound => _prefs.getString('alarm_sound') ?? 'dose_beep';
+  Future<void> setAlarmSound(String id) => _prefs.setString('alarm_sound', id);
+
   bool get quietHoursEnabled => _prefs.getBool('quiet_hours_enabled') ?? false;
   Future<void> setQuietHoursEnabled(bool value) => _prefs.setBool('quiet_hours_enabled', value);
 

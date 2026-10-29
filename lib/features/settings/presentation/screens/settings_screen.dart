@@ -4,6 +4,7 @@ import 'package:dose_time/features/reminders/services/notification_service.dart'
 import 'package:dose_time/features/settings/services/settings_service.dart';
 import 'package:dose_time/features/settings/presentation/providers/theme_provider.dart';
 import 'package:dose_time/core/services/data_export_service.dart';
+import 'package:dose_time/features/reminders/services/alarm_tones.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -68,6 +69,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           
           // Notification Settings Section
           _buildSectionHeader('Notifications'),
+          ListTile(
+            leading: const Icon(Icons.music_note_outlined),
+            title: const Text('Notification sound'),
+            subtitle: Text(alarmToneById(settings.alarmSound).name),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              await context.push('/settings/sound');
+              if (mounted) setState(() {});
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.notifications_active_outlined),
             title: const Text('Test dose alarm'),
