@@ -114,7 +114,8 @@ class PurchaseService {
   Future<PurchaseOutcome> purchasePackage(Package package) async {
     if (!_isInitialized) return PurchaseOutcome.failed;
     try {
-      final info = await Purchases.purchasePackage(package);
+      final result = await Purchases.purchase(PurchaseParams.package(package));
+      final info = result.customerInfo;
       await _cacheEntitlement(info);
       return _hasPro(info) ? PurchaseOutcome.success : PurchaseOutcome.failed;
     } on PlatformException catch (e) {
